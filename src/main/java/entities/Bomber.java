@@ -45,7 +45,7 @@ public class Bomber extends Entity {
 
                 if (pressedKey.equals(DOWN_KEY) || pressedKey.equals(UP_KEY)) {
                     if ((this.getX() >= e.getX() && this.getX() < e.getX() + Sprite.SCALED_SIZE)
-                        || (this.getX() + Sprite.SCALED_SIZE < e.getX() + Sprite.SCALED_SIZE && this.getX() + Sprite.SCALED_SIZE > e.getY())) {
+                        || (this.getX() + this.getImg().getWidth() < e.getX() + Sprite.SCALED_SIZE && this.getX() + this.getImg().getWidth() > e.getY())) {
                         if (this.getY() + Sprite.SCALED_SIZE == e.getY()
                             && pressedKey.equals(DOWN_KEY)) return false;
                         if (this.getY() - Sprite.SCALED_SIZE == e.getY()
