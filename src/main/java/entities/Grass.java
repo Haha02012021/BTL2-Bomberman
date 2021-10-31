@@ -1,5 +1,6 @@
 package entities;
 
+import javafx.scene.Scene;
 import javafx.scene.image.Image;
 
 public class Grass extends Entity {
@@ -9,7 +10,7 @@ public class Grass extends Entity {
     }
 
     @Override
-    public void update() {
+    public void update(Scene scene) {
 
     }
 }

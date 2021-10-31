@@ -9,24 +9,30 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.InputEvent;
 import javafx.stage.Stage;
 import entities.Bomber;
+import entities.Brick;
 import entities.Entity;
 import entities.Grass;
 import entities.Wall;
 import graphics.Sprite;
 
 import java.io.InputStream;
+import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class BombermanGame extends Application {
+
+    Scene scene;
     
-    public static final int WIDTH = 20;
-    public static final int HEIGHT = 15;
+    private int width;
+    private int height;
     
     private int level;
+    private List<List<String>> textMap = new ArrayList<>();
     private GraphicsContext gc;
     private Canvas canvas;
     private List<Entity> entities = new ArrayList<>();
@@ -39,8 +45,9 @@ public class BombermanGame extends Application {
 
     @Override
     public void start(Stage stage) {
+        readMap();
         // Tao Canvas
-        canvas = new Canvas(Sprite.SCALED_SIZE * WIDTH, Sprite.SCALED_SIZE * HEIGHT);
+        canvas = new Canvas(Sprite.SCALED_SIZE * width, Sprite.SCALED_SIZE * height);
         gc = canvas.getGraphicsContext2D();
 
         // Tao root container
@@ -48,7 +55,7 @@ public class BombermanGame extends Application {
         root.getChildren().add(canvas);
 
         // Tao scene
-        Scene scene = new Scene(root);
+        scene = new Scene(root);
 
         // Them scene vao stage
         stage.setScene(scene);
@@ -63,7 +70,6 @@ public class BombermanGame extends Application {
         };
         timer.start();
 
-        readMap();
         createMap();
 
         Entity bomberman = new Bomber(1, 1, Sprite.player_right.getFxImage());
@@ -73,7 +79,7 @@ public class BombermanGame extends Application {
     public void readMap() {
         try {
             InputStream inputStream = getClass().getResourceAsStream("Level1.txt");
-            Pattern p1 = Pattern.compile("^[0-9]");
+            Pattern p1 = Pattern.compile("^([0-9]+\\s)([0-9]+\\s)([0-9]+)");
             Pattern p2 = Pattern.compile("^#");
             Matcher m1;
             Matcher m2;
@@ -83,9 +89,17 @@ public class BombermanGame extends Application {
                 m1 = p1.matcher(line);
                 m2 = p2.matcher(line);
                 if (m1.find()) {
-                    
+                    level = Integer.parseInt(m1.group(1).trim());
+                    height = Integer.parseInt(m1.group(2).trim());
+                    width = Integer.parseInt(m1.group(3).trim());
+                } else if (m2.find()) {
+                    List<String> lineMap = new ArrayList<>();
+                    lineMap = Arrays.asList(line.split(""));
+                    textMap.add(lineMap);
                 }
             }
+            scanner.close();
+            inputStream.close();
         } catch (Exception e) {
             //TODO: handle exception
             System.out.println(e.getMessage());
@@ -93,14 +107,17 @@ public class BombermanGame extends Application {
     }
 
     public void createMap() {
-        for (int i = 0; i < WIDTH; i++) {
-            for (int j = 0; j < HEIGHT; j++) {
+        for (int i = 0; i < textMap.size(); i++) {
+            List<String> lineMap = textMap.get(i);
+            for (int j = 0; j < lineMap.size(); j++) {
                 Entity object;
-                if (j == 0 || j == HEIGHT - 1 || i == 0 || i == WIDTH - 1) {
-                    object = new Wall(i, j, Sprite.wall.getFxImage());
-                }
-                else {
-                    object = new Grass(i, j, Sprite.grass.getFxImage());
+                String entity = lineMap.get(j);
+                if (entity.equals("#")) {
+                    object = new Wall(j, i, Sprite.wall.getFxImage());
+                } else if (entity.equals("*")) {
+                    object = new Brick(j, i, Sprite.brick.getFxImage());
+                } else {
+                    object = new Grass(j, i, Sprite.grass.getFxImage());
                 }
                 stillObjects.add(object);
             }
@@ -108,7 +125,7 @@ public class BombermanGame extends Application {
     }
 
     public void update() {
-        entities.forEach(Entity::update);
+        entities.forEach(e -> e.update(scene));
     }
 
     public void render() {
