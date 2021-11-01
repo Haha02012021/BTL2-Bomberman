@@ -35,7 +35,7 @@ public class BombermanGame extends Application {
     private List<List<String>> textMap = new ArrayList<>();
     private GraphicsContext gc;
     private Canvas canvas;
-    private List<Entity> entities = new ArrayList<>();
+    public static List<Entity> entities = new ArrayList<>();
     public static List<Entity> stillObjects = new ArrayList<>();
 
 
@@ -111,21 +111,25 @@ public class BombermanGame extends Application {
             List<String> lineMap = textMap.get(i);
             for (int j = 0; j < lineMap.size(); j++) {
                 Entity object;
+                Entity object2;
                 String entity = lineMap.get(j);
                 if (entity.equals("#")) {
                     object = new Wall(j, i, Sprite.wall.getFxImage());
-                } else if (entity.equals("*")) {
-                    object = new Brick(j, i, Sprite.brick.getFxImage());
                 } else {
                     object = new Grass(j, i, Sprite.grass.getFxImage());
                 }
                 stillObjects.add(object);
+
+                if (entity.equals("*")) {
+                    entities.add(new entities.Brick(j, i, Sprite.brick.getFxImage()));
+                }
             }
         }
     }
 
     public void update() {
         entities.forEach(e -> e.update(scene));
+        stillObjects.forEach(e -> e.update(scene));
     }
 
     public void render() {

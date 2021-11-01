@@ -20,7 +20,7 @@ import javafx.scene.paint.Color;
 import javafx.util.Duration;
 
 public class Bomber extends Entity {
-    private static final int SPEED = 2;
+    private static final int SPEED = 4;
     private static final String RIGHT_KEY = "RIGHT_KEY";
     private static final String LEFT_KEY = "LEFT_KEY";
     private static final String DOWN_KEY = "DOWN_KEY";
@@ -30,22 +30,46 @@ public class Bomber extends Entity {
         super( x, y, img);
     }
 
-    public boolean checkPosition(List<Entity> stillObjects, String pressedKey) {
+    public boolean checkPosition(List<Entity> stillObjects, List<Entity> entities, String pressedKey) {
         for (Entity e: stillObjects) {
-            if (e instanceof Wall || e instanceof Brick) {
+            if (e instanceof Wall) {
                 if (pressedKey.equals(RIGHT_KEY) || pressedKey.equals(LEFT_KEY)) {
                     if ((this.getY() >= e.getY() && this.getY() < e.getY() + Sprite.SCALED_SIZE)
                         || (this.getY() + Sprite.SCALED_SIZE < e.getY() + Sprite.SCALED_SIZE && this.getY() + Sprite.SCALED_SIZE > e.getY())) {
-                        if (this.getX() + Sprite.SCALED_SIZE == e.getX()
+                        if (this.getX() + 36 == e.getX()
                             && pressedKey.equals(RIGHT_KEY)) return false;
-                        if (this.getX() - Sprite.SCALED_SIZE == e.getX()
+                        if (this.getX() == e.getX() + Sprite.SCALED_SIZE
                             && pressedKey.equals(LEFT_KEY)) return false;
                     }
                 }
 
                 if (pressedKey.equals(DOWN_KEY) || pressedKey.equals(UP_KEY)) {
                     if ((this.getX() >= e.getX() && this.getX() < e.getX() + Sprite.SCALED_SIZE)
-                        || (this.getX() + 24 < e.getX() + Sprite.SCALED_SIZE && this.getX() + 24 > e.getX())) {
+                    || (this.getX() + 36 < e.getX() + Sprite.SCALED_SIZE && this.getX() + 36 > e.getX())) {
+                        if (this.getY() + Sprite.SCALED_SIZE == e.getY()
+                            && pressedKey.equals(DOWN_KEY)) return false;
+                        if (this.getY() - Sprite.SCALED_SIZE == e.getY()
+                            && pressedKey.equals(UP_KEY)) return false;
+                    }
+                }
+            }
+        }
+
+        for (Entity e: entities) {
+            if (e instanceof Brick) {
+                if (pressedKey.equals(RIGHT_KEY) || pressedKey.equals(LEFT_KEY)) {
+                    if ((this.getY() >= e.getY() && this.getY() < e.getY() + Sprite.SCALED_SIZE)
+                        || (this.getY() + Sprite.SCALED_SIZE < e.getY() + Sprite.SCALED_SIZE && this.getY() + Sprite.SCALED_SIZE > e.getY())) {
+                        if (this.getX() + 36 == e.getX()
+                            && pressedKey.equals(RIGHT_KEY)) return false;
+                        if (this.getX() == e.getX() + Sprite.SCALED_SIZE
+                            && pressedKey.equals(LEFT_KEY)) return false;
+                    }
+                }
+
+                if (pressedKey.equals(DOWN_KEY) || pressedKey.equals(UP_KEY)) {
+                    if ((this.getX() >= e.getX() && this.getX() < e.getX() + Sprite.SCALED_SIZE)
+                    || (this.getX() + 36 < e.getX() + Sprite.SCALED_SIZE && this.getX() + 36 > e.getX())) {
                         if (this.getY() + Sprite.SCALED_SIZE == e.getY()
                             && pressedKey.equals(DOWN_KEY)) return false;
                         if (this.getY() - Sprite.SCALED_SIZE == e.getY()
@@ -61,7 +85,9 @@ public class Bomber extends Entity {
     @Override
     public void update(Scene scene) {
         scene.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.RIGHT) {
+            if (e.getCode() == KeyCode.B) {
+                BombermanGame.stillObjects.add(new Bomb(this.getX() / Sprite.SCALED_SIZE, this.getY() / Sprite.SCALED_SIZE, Sprite.bomb.getFxImage()));
+            } else if (e.getCode() == KeyCode.RIGHT) {
                 
                 Timeline t = new Timeline();
                 t.setCycleCount(1);
@@ -70,7 +96,7 @@ public class Bomber extends Entity {
                     Duration.millis(400), 
                     (ActionEvent event) -> {
                         this.setImg(Sprite.player_right.getFxImage());
-                        Boolean b = this.checkPosition(BombermanGame.stillObjects, RIGHT_KEY);
+                        Boolean b = this.checkPosition(BombermanGame.stillObjects, BombermanGame.entities, RIGHT_KEY);
                         if (b) this.setX(this.getX() + SPEED);
                     }
                 ));
@@ -79,7 +105,7 @@ public class Bomber extends Entity {
                     Duration.millis(800), 
                     (ActionEvent event) -> {
                         this.setImg(Sprite.player_right_1.getFxImage());
-                        Boolean b = this.checkPosition(BombermanGame.stillObjects, RIGHT_KEY);
+                        Boolean b = this.checkPosition(BombermanGame.stillObjects, BombermanGame.entities, RIGHT_KEY);
                         if (b) this.setX(this.getX() + SPEED);
                     }
                 ));
@@ -88,7 +114,7 @@ public class Bomber extends Entity {
                     Duration.millis(1200), 
                     (ActionEvent event) -> {
                         this.setImg(Sprite.player_right_2.getFxImage());
-                        Boolean b = this.checkPosition(BombermanGame.stillObjects, RIGHT_KEY);
+                        Boolean b = this.checkPosition(BombermanGame.stillObjects, BombermanGame.entities, RIGHT_KEY);
                         if (b) this.setX(this.getX() + SPEED);
                     }
                 ));
@@ -103,7 +129,7 @@ public class Bomber extends Entity {
                     Duration.millis(400), 
                     (ActionEvent event) -> {
                         this.setImg(Sprite.player_left.getFxImage());
-                        Boolean b = this.checkPosition(BombermanGame.stillObjects, LEFT_KEY);
+                        Boolean b = this.checkPosition(BombermanGame.stillObjects, BombermanGame.entities, LEFT_KEY);
                         if (b) this.setX(this.getX() - SPEED);
                     }
                 ));
@@ -112,7 +138,7 @@ public class Bomber extends Entity {
                     Duration.millis(800), 
                     (ActionEvent event) -> {
                         this.setImg(Sprite.player_left_1.getFxImage());
-                        Boolean b = this.checkPosition(BombermanGame.stillObjects, LEFT_KEY);
+                        Boolean b = this.checkPosition(BombermanGame.stillObjects, BombermanGame.entities, LEFT_KEY);
                         if (b) this.setX(this.getX() - SPEED);
                     }
                 ));
@@ -121,7 +147,7 @@ public class Bomber extends Entity {
                     Duration.millis(1200), 
                     (ActionEvent event) -> {
                         this.setImg(Sprite.player_left_2.getFxImage());
-                        Boolean b = this.checkPosition(BombermanGame.stillObjects, LEFT_KEY);
+                        Boolean b = this.checkPosition(BombermanGame.stillObjects, BombermanGame.entities, LEFT_KEY);
                         if (b) this.setX(this.getX() - SPEED);
                     }
                 ));
@@ -136,7 +162,7 @@ public class Bomber extends Entity {
                     Duration.millis(400), 
                     (ActionEvent event) -> {
                         this.setImg(Sprite.player_down.getFxImage());
-                        Boolean b = this.checkPosition(BombermanGame.stillObjects, DOWN_KEY);
+                        Boolean b = this.checkPosition(BombermanGame.stillObjects, BombermanGame.entities, DOWN_KEY);
                         if (b) this.setY(this.getY() + SPEED);
                     }
                 ));
@@ -145,7 +171,7 @@ public class Bomber extends Entity {
                     Duration.millis(800), 
                     (ActionEvent event) -> {
                         this.setImg(Sprite.player_down_1.getFxImage());
-                        Boolean b = this.checkPosition(BombermanGame.stillObjects, DOWN_KEY);
+                        Boolean b = this.checkPosition(BombermanGame.stillObjects, BombermanGame.entities, DOWN_KEY);
                         if (b) this.setY(this.getY() + SPEED);
                     }
                 ));
@@ -154,7 +180,7 @@ public class Bomber extends Entity {
                     Duration.millis(1200), 
                     (ActionEvent event) -> {
                         this.setImg(Sprite.player_down_2.getFxImage());
-                        Boolean b = this.checkPosition(BombermanGame.stillObjects, DOWN_KEY);
+                        Boolean b = this.checkPosition(BombermanGame.stillObjects, BombermanGame.entities, DOWN_KEY);
                         if (b) this.setY(this.getY() + SPEED);
                     }
                 ));
@@ -169,7 +195,7 @@ public class Bomber extends Entity {
                     Duration.millis(400), 
                     (ActionEvent event) -> {
                         this.setImg(Sprite.player_up.getFxImage());
-                        Boolean b = this.checkPosition(BombermanGame.stillObjects, UP_KEY);
+                        Boolean b = this.checkPosition(BombermanGame.stillObjects, BombermanGame.entities, UP_KEY);
                         if (b) this.setY(this.getY() - SPEED);
                     }
                 ));
@@ -178,7 +204,7 @@ public class Bomber extends Entity {
                     Duration.millis(800), 
                     (ActionEvent event) -> {
                         this.setImg(Sprite.player_up_1.getFxImage());
-                        Boolean b = this.checkPosition(BombermanGame.stillObjects, UP_KEY);
+                        Boolean b = this.checkPosition(BombermanGame.stillObjects, BombermanGame.entities, UP_KEY);
                         if (b) this.setY(this.getY() - SPEED);
                     }
                 ));
@@ -187,7 +213,7 @@ public class Bomber extends Entity {
                     Duration.millis(1200), 
                     (ActionEvent event) -> {
                         this.setImg(Sprite.player_up_2.getFxImage());
-                        Boolean b = this.checkPosition(BombermanGame.stillObjects, UP_KEY);
+                        Boolean b = this.checkPosition(BombermanGame.stillObjects, BombermanGame.entities, UP_KEY);
                         if (b) this.setY(this.getY() - SPEED);
                     }
                 ));
