@@ -1,5 +1,6 @@
-package entities;
+package entities.static_entity;
 
+import entities.Entity;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 
@@ -10,7 +11,8 @@ public class Grass extends Entity {
     }
 
     @Override
-    public void update(Scene scene) {
-
+    public void update() {
+        // TODO Auto-generated method stub
+        
     }
 }

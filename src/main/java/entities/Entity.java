@@ -1,36 +1,37 @@
 package entities;
 
-import javafx.scene.Scene;
-import javafx.scene.SnapshotParameters;
+import java.util.List;
+
+import graphics.Sprite;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.paint.Color;
-import graphics.Sprite;
 
 public abstract class Entity {
     //Tọa độ X tính từ góc trái trên trong Canvas
-    protected int x;
+    protected double x;
 
     //Tọa độ Y tính từ góc trái trên trong Canvas
-    protected int y;
+    protected double y;
 
     protected Image img;
 
+    protected Entity() {
+    }
 
-    public int getX() {
+
+    public double getX() {
         return this.x;
     }
 
-    public void setX(int x) {
+    public void setX(double x) {
         this.x = x;
     }
 
-    public int getY() {
+    public double getY() {
         return this.y;
     }
 
-    public void setY(int y) {
+    public void setY(double y) {
         this.y = y;
     }
 
@@ -53,5 +54,57 @@ public abstract class Entity {
     public void render(GraphicsContext gc) {
         gc.drawImage(img, x, y);
     }
-    public abstract void update(Scene scene);
+
+    public boolean checkCollision(List<List<String>> map, String symbol, String type) {
+        int size = Sprite.SCALED_SIZE;
+
+        if (type.equals("RIGHT")) {
+            int nextX = (int)(this.getX() + size) / size;
+            double nextDoubleY = this.getY() / size;
+            int nextY = (int)nextDoubleY;
+            if (nextY < nextDoubleY) {
+                return (map.get(nextY).get(nextX).equals(symbol) || map.get(nextY + 1).get(nextX).equals(symbol));
+            } else {
+                return map.get(nextY).get(nextX).equals(symbol);
+            }
+        }
+
+        if (type.equals("LEFT")) {
+            int nextX = (int)(this.getX() - 4) / size;
+            double nextDoubleY = this.getY() / size;
+            int nextY = (int)nextDoubleY;
+            if (nextY < nextDoubleY) {
+                return map.get(nextY).get(nextX).equals(symbol) || map.get(nextY + 1).get(nextX).equals(symbol);
+            } else {
+                return map.get(nextY).get(nextX).equals(symbol);
+            }
+        }
+
+        if (type.equals("DOWN")) {
+            double nextDoubleX = (this.getX()) / size;
+            int nextX = (int)nextDoubleX;
+            int nextY = (int)(this.getY() + size) / size;
+            if (nextDoubleX - nextX > 0.2) {
+                return map.get(nextY).get(nextX).equals(symbol) || map.get(nextY).get(nextX + 1).equals(symbol);
+            } else {
+                return map.get(nextY).get(nextX).equals(symbol);
+            }
+        }
+
+        if (type.equals("UP")) {
+            double nextDoubleX = (this.getX()) / size;
+            int nextX = (int)nextDoubleX;
+            int nextY = (int)(this.getY() - 1) / size;
+            if (nextDoubleX - nextX > 0.2) {
+                return map.get(nextY).get(nextX).equals(symbol) || map.get(nextY).get(nextX + 1).equals(symbol);
+            } else {
+                return map.get(nextY).get(nextX).equals(symbol);
+            }
+        }
+
+        return false;
+    }
+
+
+    public abstract void update();
 }
