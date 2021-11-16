@@ -3,6 +3,7 @@ package entities.static_entity.Bomb;
 import app.BombermanGame;
 import entities.AnimatedImage;
 import entities.static_entity.Brick;
+import entities.static_entity.Grass;
 import graphics.Sprite;
 import javafx.scene.image.Image;
 
@@ -42,9 +43,11 @@ public class ChildExplosion extends AnimatedImage {
             countToFinish++;
             if (countToFinish == cycle) {
                 finished = true;
+                BombermanGame.textMap.get((int)(this.getY() / Sprite.SCALED_SIZE)).set((int)(this.getX() / Sprite.SCALED_SIZE), " ");
             }
         } else {
             if (!finished) {
+                this.checkCollision(BombermanGame.entities);
                 if (!tail) {
                     if (this.checkCollision(BombermanGame.textMap, "*", "LEFT")
                             || this.checkCollision(BombermanGame.textMap, "x", "LEFT")) {
@@ -52,56 +55,70 @@ public class ChildExplosion extends AnimatedImage {
                         int y = (int)(this.getY() / Sprite.SCALED_SIZE);
                         System.out.println(x + " " + y);
                         Brick brick = new Brick(x, y, Sprite.brick.getFxImage());
+                        Grass grass = new Grass(x, y, Sprite.grass.getFxImage());
                         if (this.checkCollision(BombermanGame.textMap, "*", "LEFT")) BombermanGame.textMap.get(y).set(x, " ");
                         if (this.checkCollision(BombermanGame.textMap, "x", "LEFT")) {
                             BombermanGame.textMap.get(y).set(x, "X");
-                            brick.setHidden(false);
+                            brick.setHiddenPortal(false);
+                        }
+                        if (this.checkCollision(BombermanGame.textMap, "b", "LEFT")) {
+                            BombermanGame.textMap.get(y).set(x, "B");
+                            brick.setHiddenPBomb(false);
                         }
                         brick.setExploded(true);
-                        BombermanGame.stillObjects.set(y * BombermanGame.width + x, brick);
+                        BombermanGame.stillObjects.set(y * BombermanGame.width + x, grass);
+                        BombermanGame.entities.add(brick);
                     } else if (this.checkCollision(BombermanGame.textMap, "*", "RIGHT")
                             || this.checkCollision(BombermanGame.textMap, "x", "RIGHT")) {
                         int x = (int)(this.getX() / Sprite.SCALED_SIZE) + 1;
                         int y = (int)(this.getY() / Sprite.SCALED_SIZE);
                         System.out.println(x + " " + y);
                         Brick brick = new Brick(x, y, Sprite.brick.getFxImage());
+                        Grass grass = new Grass(x, y, Sprite.grass.getFxImage());
                         if (this.checkCollision(BombermanGame.textMap, "*", "RIGHT")) BombermanGame.textMap.get(y).set(x, " ");
                         if (this.checkCollision(BombermanGame.textMap, "x", "RIGHT")) {
                             BombermanGame.textMap.get(y).set(x, "X");
-                            brick.setHidden(false);
+                            brick.setHiddenPortal(false);
+                        }
+                        if (this.checkCollision(BombermanGame.textMap, "b", "RIGHT")) {
+                            BombermanGame.textMap.get(y).set(x, "B");
+                            brick.setHiddenPBomb(false);
                         }
                         brick.setExploded(true);
-                        BombermanGame.stillObjects.set(y * BombermanGame.width + x, brick);
+                        BombermanGame.stillObjects.set(y * BombermanGame.width + x, grass);
+                        BombermanGame.entities.add(brick);
                     } else if (this.checkCollision(BombermanGame.textMap, "*", "DOWN")
                                 || this.checkCollision(BombermanGame.textMap, "x", "DOWN")) {
                         int x = (int)(this.getX() / Sprite.SCALED_SIZE);
                         int y = (int)(this.getY() / Sprite.SCALED_SIZE) + 1;
                         System.out.println(x + " " + y);
                         Brick brick = new Brick(x, y, Sprite.brick.getFxImage());
+                        Grass grass = new Grass(x, y, Sprite.grass.getFxImage());
                         if (this.checkCollision(BombermanGame.textMap, "*", "DOWN")) BombermanGame.textMap.get(y).set(x, " ");
                         if (this.checkCollision(BombermanGame.textMap, "x", "DOWN")) {
                             BombermanGame.textMap.get(y).set(x, "X");
-                            brick.setHidden(false);
+                            brick.setHiddenPortal(false);
                         }
                         brick.setExploded(true);
-                        BombermanGame.stillObjects.set(y * BombermanGame.width + x, brick);
+                        BombermanGame.stillObjects.set(y * BombermanGame.width + x, grass);
+                        BombermanGame.entities.add(brick);
                     } else if (this.checkCollision(BombermanGame.textMap, "*", "UP")
                                 || this.checkCollision(BombermanGame.textMap, "x", "UP")) {
                         int x = (int)(this.getX() / Sprite.SCALED_SIZE);
                         int y = (int)(this.getY() / Sprite.SCALED_SIZE) - 1;
                         System.out.println(x + " " + y);
                         Brick brick = new Brick(x, y, Sprite.brick.getFxImage());
+                        Grass grass = new Grass(x, y, Sprite.grass.getFxImage());
                         if (this.checkCollision(BombermanGame.textMap, "*", "UP")) BombermanGame.textMap.get(y).set(x, " ");
                         if (this.checkCollision(BombermanGame.textMap, "x", "UP")) {
                             BombermanGame.textMap.get(y).set(x, "X");
-                            brick.setHidden(false);
+                            brick.setHiddenPortal(false);
                         }
                         brick.setExploded(true);
-                        BombermanGame.stillObjects.set(y * BombermanGame.width + x, brick);
+                        BombermanGame.stillObjects.set(y * BombermanGame.width + x, grass);
+                        BombermanGame.entities.add(brick);
                     }
                 }
-
-
                 this.setIndex(this.getIndex() + 1);
             }
         }

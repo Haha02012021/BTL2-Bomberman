@@ -1,8 +1,13 @@
 package entities;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import app.BombermanGame;
+import entities.move_entity.Bomberman;
+import entities.move_entity.Enemy;
 import graphics.Sprite;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 
@@ -103,6 +108,28 @@ public abstract class Entity {
         }
 
         return false;
+    }
+
+    public void checkCollision(ArrayList<AnimatedImage> entities) {
+        int size = Sprite.SCALED_SIZE;
+        Rectangle2D e = new Rectangle2D(this.getX(), this.getY(), Sprite.SCALED_SIZE, Sprite.SCALED_SIZE);
+        if (this instanceof Bomberman) {
+            for (AnimatedImage entity: entities) {
+                if (!(entity instanceof Bomberman)) {
+                    Rectangle2D c = new Rectangle2D(entity.getX(), entity.getY(), Sprite.SCALED_SIZE, Sprite.SCALED_SIZE);
+                    if (c.intersects(e)) {
+                        ((Bomberman) this).setDied(true);
+                    }
+                }
+            }
+        } else {
+            for (AnimatedImage entity: entities) {
+                Rectangle2D c = new Rectangle2D(entity.getX(), entity.getY(), Sprite.SCALED_SIZE, Sprite.SCALED_SIZE);
+                if (c.intersects(e)) {
+                    entity.setDied(true);
+                }
+            }
+        }
     }
 
 

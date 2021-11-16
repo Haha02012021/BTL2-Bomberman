@@ -11,6 +11,7 @@ public class AnimatedImage extends Entity {
     private double width;
     private double height;
     private int index = 0;
+    private boolean died = false;
 
     public AnimatedImage() {
         positionX = 0;
@@ -26,6 +27,14 @@ public class AnimatedImage extends Entity {
     }
     public void setIndex(int i) {
         this.index = i;
+    }
+
+    public boolean isDied() {
+        return died;
+    }
+
+    public void setDied(boolean died) {
+        this.died = died;
     }
 
     public void setFrames(Image[] frames) {

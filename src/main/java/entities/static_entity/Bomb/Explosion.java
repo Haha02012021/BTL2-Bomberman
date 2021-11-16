@@ -24,21 +24,22 @@ public class Explosion extends AnimatedImage {
         this.x = x;
         this.y = y;
 
-        if(BombermanGame.textMap.get(y - 1).get(x).equals(" ")) topExplosion = new ChildExplosion(x, y - 1, null, topExplosionFrames);
-        if(BombermanGame.textMap.get(y + 1).get(x).equals(" ")) downExplosion = new ChildExplosion(x, y + 1, null, downExplosionFrames);
+        if (BombermanGame.textMap.get(y - 1).get(x).equals(" ")) topExplosion = new ChildExplosion(x, y - 1, null, topExplosionFrames);
+        if (BombermanGame.textMap.get(y + 1).get(x).equals(" ")) downExplosion = new ChildExplosion(x, y + 1, null, downExplosionFrames);
         centerExplosion = new ChildExplosion(x, y, null, centerExplosionFrames);
         if (BombermanGame.textMap.get(y).get(x - 1).equals(" ")) leftExplosion = new ChildExplosion(x - 1, y, null, leftExplosionFrames);
         if (BombermanGame.textMap.get(y).get(x + 1).equals(" ")) rightExplosion = new ChildExplosion(x + 1, y, null, rightExplosionFramse);
 
         BombermanGame.addStillObjects(centerExplosion);
+        BombermanGame.textMap.get(y).set(x, "-1");
     }
 
     public void update() {
         if (topExplosion != null) {
             topExplosion.setTail(true);
             BombermanGame.addStillObjects(topExplosion);
+            BombermanGame.textMap.get(y - 1).set(x, "-1");
             if (topExplosion.isFinished()) {
-                System.out.println("Đã vào");
                 BombermanGame.removeStillObjects(topExplosion);
                 topExplosion = null;
             }
@@ -47,8 +48,8 @@ public class Explosion extends AnimatedImage {
         if (downExplosion != null) {
             downExplosion.setTail(true);
             BombermanGame.addStillObjects(downExplosion);
+            BombermanGame.textMap.get(y + 1).set(x, "-1");
             if (downExplosion.isFinished()) {
-                System.out.println("Đã vào");
                 BombermanGame.removeStillObjects(downExplosion);
                 downExplosion = null;
             }
@@ -57,6 +58,7 @@ public class Explosion extends AnimatedImage {
         if (leftExplosion != null) {
             leftExplosion.setTail(true);
             BombermanGame.addStillObjects(leftExplosion);
+            BombermanGame.textMap.get(y).set(x - 1, "-1");
             if (leftExplosion.isFinished()) {
                 BombermanGame.removeStillObjects(leftExplosion);
                 leftExplosion = null;
@@ -66,6 +68,7 @@ public class Explosion extends AnimatedImage {
         if (rightExplosion != null) {
             rightExplosion.setTail(true);
             BombermanGame.addStillObjects(rightExplosion);
+            BombermanGame.textMap.get(y).set(x + 1, "-1");
             if (rightExplosion.isFinished()) {
                 BombermanGame.removeStillObjects(rightExplosion);
                 rightExplosion = null;
