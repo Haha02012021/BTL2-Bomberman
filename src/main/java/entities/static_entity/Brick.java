@@ -10,15 +10,17 @@ public class Brick extends AnimatedImage {
     private boolean isExploded = false;
     private boolean disappeared = false;
     private boolean hiddenPortal = true;
-    private boolean hiddenPBomb = true;
+    private boolean hiddenPSpeed = true;
+    private boolean hiddenPFlame = true;
     private Image[] brickFrames = {
             Sprite.brick_exploded.getFxImage(),
             Sprite.brick_exploded1.getFxImage(),
             Sprite.brick_exploded2.getFxImage(),
             Sprite.grass.getFxImage(),
-            Sprite.portal.getFxImage(),
-            Sprite.powerup_bombs.getFxImage(),
-            Sprite.brick.getFxImage()};
+            Sprite.brick.getFxImage(),
+            Sprite.powerup_speed.getFxImage(),
+            Sprite.powerup_flames.getFxImage()
+    };
 
     public boolean isHiddenPortal() {
         return hiddenPortal;
@@ -36,12 +38,20 @@ public class Brick extends AnimatedImage {
         isExploded = exploded;
     }
 
-    public boolean isHiddenPBomb() {
-        return hiddenPBomb;
+    public boolean isHiddenPSpeed() {
+        return hiddenPSpeed;
     }
 
-    public void setHiddenPBomb(boolean hiddenPBomb) {
-        this.hiddenPBomb = hiddenPBomb;
+    public boolean isHiddenPFlame() {
+        return hiddenPFlame;
+    }
+
+    public void setHiddenPFlame(boolean hiddenPFlame) {
+        this.hiddenPFlame = hiddenPFlame;
+    }
+
+    public void setHiddenPSpeed(boolean hiddenPSpeed) {
+        this.hiddenPSpeed = hiddenPSpeed;
     }
 
     public Brick(int x, int y, Image img) {
@@ -54,17 +64,23 @@ public class Brick extends AnimatedImage {
         // TODO Auto-generated method stub
         if (isExploded) {
             if (this.getIndex() >= 3) {
-                if (hiddenPortal && hiddenPBomb) {
+                if (hiddenPortal && hiddenPSpeed && hiddenPFlame) {
                     this.setIndex(3);
                     this.setImg(brickFrames[3]);
                     BombermanGame.removeEntities.add(this);
                 } else {
                     if (!hiddenPortal) {
-                        this.setIndex(4);
-                        this.setImg(brickFrames[4]);
-                    } else if (!hiddenPBomb) {
+                        BombermanGame.removeEntities.add(this);
+                    }
+
+                    if (!hiddenPSpeed) {
                         this.setIndex(5);
                         this.setImg(brickFrames[5]);
+                    }
+
+                    if (!hiddenPFlame) {
+                        this.setIndex(6);
+                        this.setImg(brickFrames[6]);
                     }
                 }
 
@@ -76,7 +92,7 @@ public class Brick extends AnimatedImage {
                 if (!disappeared) this.setIndex(this.getIndex() + 1);
             }
         } else {
-            this.setIndex(6);
+            this.setIndex(4);
         }
     }
 }

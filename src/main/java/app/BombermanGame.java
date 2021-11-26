@@ -1,6 +1,5 @@
 package app;
 
-import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,7 +11,9 @@ import java.util.regex.Pattern;
 import entities.AnimatedImage;
 import entities.Entity;
 import entities.move_entity.Bomberman;
-import entities.move_entity.Enemy;
+import entities.move_entity.enemies.Balloom;
+import entities.move_entity.enemies.Enemy;
+import entities.move_entity.enemies.Oneal;
 import entities.static_entity.Brick;
 import entities.static_entity.Grass;
 import entities.static_entity.Wall;
@@ -36,7 +37,6 @@ import javafx.scene.control.Label;
 import javafx.scene.effect.BlurType;
 import javafx.scene.effect.InnerShadow;
 import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -50,18 +50,23 @@ public class BombermanGame extends Application {
     public static int width;
     public static int height;
     private static final int NUMBER_OF_LEVELS = 2;
+    public static int numberOfEnemies;
+    public static int timeLimitMove = 100;
 
     private long stageTime = 3;
     public static int level = 1;
-    private int timeOfLevel;
+    private static int timeOfLevel;
+    private LongProperty time;
     public static List<List<String>> textMap = new ArrayList<>();
     public static boolean win = false;
     public static boolean lose = false;
     private boolean startGame = true;
+    private boolean clickMenu = false;
 
     public static ArrayList<String> input = new ArrayList<String>();
     private GraphicsContext gc;
     public static ArrayList<Entity> stillObjects = new ArrayList<>();
+    public static ArrayList<Entity> addStillObjects = new ArrayList<>();
     public static ArrayList<AnimatedImage> entities = new ArrayList<>();
     public static ArrayList<AnimatedImage> removeEntities = new ArrayList<>();
     public static IntegerProperty souls = new SimpleIntegerProperty(3);
@@ -89,97 +94,112 @@ public class BombermanGame extends Application {
 
         readMap();
 
-        // full main scene
-        VBox fullScreen = new VBox();
+        Scene stageScene = stageScene(level);
 
-        HBox topBar = new HBox();
-        topBar.setPrefHeight(50);
-        topBar.setStyle("-fx-background-color: #cccccc; -fx-border-color: #dfdfdf; -fx-border-width: 5;");
-        InnerShadow innerShadow = new InnerShadow();
-        innerShadow.setBlurType(BlurType.ONE_PASS_BOX);
-        innerShadow.setOffsetX(-5);
-        innerShadow.setOffsetY(-5);
-        innerShadow.setColor(Color.web("#666666"));
-        topBar.setEffect(innerShadow);
+        Scene gameScene = gameScene(theStage, stageScene);
 
-        HBox levelBox = new HBox();
+        Scene startScene = startScene(theStage, stageScene, gameScene);
 
-        Label titleLevel = new Label("Level: ");
-        titleLevel.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+        if (startGame) {
+            theStage.setScene(startScene);
+            startGame = false;
+        } else {
+            theStage.setScene(gameScene);
+        }
+        theStage.getIcons().add(new Image(getClass().getResourceAsStream("angry.png")));
 
-        Label levelDisplay = new Label(String.valueOf(level));
-        levelDisplay.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+        gameScene.setOnKeyPressed(
+                new EventHandler<KeyEvent>() {
+                    public void handle(KeyEvent e) {
+                        String code = e.getCode().toString();
+                        if (!input.contains(code))
+                            input.add(code);
+                    }
+                });
 
-        levelBox.getChildren().addAll(titleLevel, levelDisplay);
-        levelBox.setPadding(new Insets(0, 0, 0, width * Sprite.SCALED_SIZE / 20));
-        levelBox.setAlignment(Pos.CENTER);
+        gameScene.setOnKeyReleased(
+                new EventHandler<KeyEvent>() {
+                    public void handle(KeyEvent e) {
+                        String code = e.getCode().toString();
+                        input.remove(code);
+                    }
+                });
 
-        HBox timeBox = new HBox();
+        AnimationTimer timer = new AnimationTimer() {
+            private long startTime;
 
-        Label titleTime = new Label("Time: ");
-        titleTime.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+            @Override
+            public void start() {
+                startTime = System.currentTimeMillis();
+                super.start();
+            }
 
-        Label timeDisplay = new Label();
-        LongProperty time = new SimpleLongProperty(timeOfLevel);
-        timeDisplay.textProperty().bind(time.asString());
-        timeDisplay.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
-        timeDisplay.textProperty().addListener(((observableValue, s, t1) -> {
-            if (t1 != null) {
-                if (Integer.parseInt(t1) <= 10) {
-                    timeDisplay.setTextFill(Color.RED);
-                    titleTime.setTextFill(Color.RED);
+            @Override
+            public void stop() {
+                super.stop();
+            }
+
+            private long lastUpdateMove = 0;
+            private long getLastUpdateStatic = 0;
+
+            @Override
+            public void handle(long l) {
+                long now = System.currentTimeMillis();
+
+                if (timeOfLevel - (now - startTime) / 1000 >= 0) {
+                    if (!clickMenu) time.set(timeOfLevel - (now - startTime) / 1000);
+                }
+                render();
+                if (now - lastUpdateMove >= timeLimitMove) {
+                    updateMove();
+                    lastUpdateMove = now;
+                }
+                if (now - getLastUpdateStatic >= 100) {
+                    updateStatic();
+                    getLastUpdateStatic = now;
+                }
+
+                if (lose) {
+                    stop();
+                    textMap.clear();
+                    win = false;
+
+                    timeLimitMove = 100;
+                    input.clear();
+                    stillObjects.clear();
+                    entities.clear();
+                    removeEntities.clear();
+                    addStillObjects.clear();
+                    souls = new SimpleIntegerProperty(3);
+                    Scene loseScene = loseScene(theStage, stageScene);
+                    theStage.setScene(loseScene);
+                }
+
+                if (win) {
+                    stop();
+                    level += 1;
+                    textMap.clear();
+                    win = false;
+
+                    input.clear();
+                    stillObjects.clear();
+                    entities.clear();
+                    removeEntities.clear();
+                    addStillObjects.clear();
+                    souls = new SimpleIntegerProperty(3);
+                    Scene winScene = winScene(theStage);
+                    theStage.setScene(winScene);
                 }
             }
-        }));
+        };
+        timer.start();
 
-        timeBox.getChildren().addAll(titleTime, timeDisplay);
-        timeBox.setAlignment(Pos.CENTER_LEFT);
-        timeBox.setPadding(new Insets(0, width * Sprite.SCALED_SIZE / 10, 0, width * Sprite.SCALED_SIZE / 10));
+        createMap();
 
-        HBox numberOfSouls = new HBox();
+        theStage.show();
+    }
 
-        Label soulTitle = new Label("Souls: ");
-        soulTitle.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
-
-        Label soulDisplay = new Label();
-        soulDisplay.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
-        soulDisplay.textProperty().bind(souls.asString());
-        soulDisplay.textProperty().addListener(((observableValue, s, t1) -> {
-            if (t1 != null) {
-                if (Integer.parseInt(t1) == 0) {
-                    lose = true;
-                }
-            }
-        }));
-
-        numberOfSouls.getChildren().addAll(soulTitle, soulDisplay);
-        numberOfSouls.setAlignment(Pos.CENTER_LEFT);
-
-        topBar.getChildren().addAll(levelBox, timeBox, numberOfSouls);
-
-        Group root = new Group();
-        Canvas canvas = new Canvas(Sprite.SCALED_SIZE * width, Sprite.SCALED_SIZE * height);
-        System.out.println(canvas.getWidth() + " " + canvas.getHeight());
-        root.getChildren().add(canvas);
-
-        fullScreen.getChildren().addAll(topBar, root);
-        System.out.println(fullScreen.getWidth() + " " + fullScreen.getHeight());
-
-        Scene theScene = new Scene(fullScreen);
-
-        // stage scene
-        StackPane stageWindow = new StackPane();
-        stageWindow.setPrefSize(width * Sprite.SCALED_SIZE, height * Sprite.SCALED_SIZE);
-        stageWindow.setStyle("-fx-background-color: black;");
-
-        Label label = new Label("Stage " + level);
-        label.setTextFill(Color.WHITE);
-        label.setFont(Font.font("Roboto", FontWeight.BOLD, 30));
-
-        stageWindow.getChildren().add(label);
-
-        Scene stageScene = new Scene(stageWindow);
-
+    public Scene startScene(Stage theStage, Scene stageScene, Scene gameScene) {
         // start scene
         VBox startWindow = new VBox();
         startWindow.setStyle("-fx-background-color: black;");
@@ -192,9 +212,7 @@ public class BombermanGame extends Application {
 
         HBox buttonBar = new HBox();
         Button tutorialButton = new Button("TUTORIAL");
-        tutorialButton.setStyle("-fx-background-color: transparent;");
-        tutorialButton.setFont(Font.font("Roboto", FontWeight.BOLD,  20));
-        tutorialButton.setTextFill(Color.WHITE);
+        styleButton(tutorialButton, Color.WHITE);
         tutorialButton.setOnAction(e -> {
             VBox tutorialWindow = new VBox();
             tutorialWindow.setStyle("-fx-background-color: black;");
@@ -252,23 +270,39 @@ public class BombermanGame extends Application {
 
             theStage.setScene(tutorialScene);
         });
-        tutorialButton.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
-            if (t1) {
-                tutorialButton.setTextFill(Color.web("#cccccc"));
-            } else {
-                tutorialButton.setTextFill(Color.WHITE);
-            }
-        });
-        tutorialButton.focusedProperty().addListener((observableValue, aBoolean, t1) -> {
-            if (t1) {
-                tutorialButton.setTextFill(Color.web("#cc3333"));
-            }
-        });
+
+        Button continueButton = new Button("CONTINUE");
+        continueButton.setStyle("-fx-background-color: transparent;");
+        continueButton.setFont(Font.font("Roboto", FontWeight.BOLD,  20));
+        continueButton.setTextFill(Color.web("#cccccc"));
+        if (clickMenu) {
+            styleButton(continueButton, Color.WHITE);
+            continueButton.setOnAction(e -> {
+                clickMenu = false;
+                Timeline timeline = new Timeline();
+                timeline.setCycleCount(1);
+
+                timeline.getKeyFrames().add(new KeyFrame(
+                        Duration.millis(0),
+                        event -> {
+                            theStage.setScene(stageScene);
+                        }
+                ));
+
+                timeline.getKeyFrames().add(new KeyFrame(
+                        Duration.millis(1000),
+                        event -> {
+                            theStage.setScene(gameScene);
+                        }
+                ));
+
+                timeline.play();
+            });
+        }
 
         Button startButton = new Button("START");
-        startButton.setStyle("-fx-background-color: transparent;");
-        startButton.setFont(Font.font("Roboto", FontWeight.BOLD,  20));
-        startButton.setTextFill(Color.WHITE);
+        if (clickMenu) startButton.setText("RESTART");
+        styleButton(startButton, Color.WHITE);
         startButton.setOnAction(e -> {
             Timeline timeline = new Timeline();
             timeline.setCycleCount(1);
@@ -283,26 +317,28 @@ public class BombermanGame extends Application {
             timeline.getKeyFrames().add(new KeyFrame(
                     Duration.millis(1000),
                     event -> {
-                        theStage.setScene(theScene);
+                        if (!clickMenu) theStage.setScene(gameScene);
+                        else {
+                            textMap.clear();
+                            win = false;
+                            lose = false;
+
+                            timeLimitMove = 100;
+                            input.clear();
+                            stillObjects.clear();
+                            entities.clear();
+                            removeEntities.clear();
+                            addStillObjects.clear();
+                            BombermanGame.this.start(theStage);
+                            clickMenu = false;
+                        }
                     }
             ));
 
             timeline.play();
         });
-        startButton.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
-            if (t1) {
-                startButton.setTextFill(Color.web("#cccccc"));
-            } else {
-                startButton.setTextFill(Color.WHITE);
-            }
-        });
-        startButton.focusedProperty().addListener((observableValue, aBoolean, t1) -> {
-            if (t1) {
-                startButton.setTextFill(Color.web("#cc3333"));
-            }
-        });
 
-        buttonBar.getChildren().addAll(tutorialButton, startButton);
+        buttonBar.getChildren().addAll(tutorialButton, continueButton, startButton);
         buttonBar.setAlignment(Pos.CENTER);
         buttonBar.setPadding(new Insets(height * Sprite.SCALED_SIZE / 10, 0, 0, 0));
         startWindow.getChildren().add(buttonBar);
@@ -310,274 +346,294 @@ public class BombermanGame extends Application {
 
         Scene theStartScene = new Scene(startWindow);
 
-        if (startGame) {
-            theStage.setScene(theStartScene);
-            startGame = false;
-        } else {
-            theStage.setScene(theScene);
-        }
-        theStage.getIcons().add(new Image(getClass().getResourceAsStream("angry.png")));
+        return theStartScene;
+    }
 
-        theScene.setOnKeyPressed(
-                new EventHandler<KeyEvent>() {
-                    public void handle(KeyEvent e) {
-                        String code = e.getCode().toString();
-                        if (!input.contains(code))
-                            input.add(code);
-                    }
-                });
+    public void styleButton(Button button, Color color) {
+        button.setStyle("-fx-background-color: transparent;");
+        button.setFont(Font.font("Roboto", FontWeight.BOLD,  20));
+        button.setTextFill(color);
+        button.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
+            if (t1) {
+                button.setTextFill(Color.web("#cc3333"));
+            } else {
+                button.setTextFill(color);
+            }
+        });
+    }
 
-        theScene.setOnKeyReleased(
-                new EventHandler<KeyEvent>() {
-                    public void handle(KeyEvent e) {
-                        String code = e.getCode().toString();
-                        input.remove(code);
-                    }
-                });
+    public Scene stageScene(int level) {
+        // stage scene
+        StackPane stageWindow = new StackPane();
+        stageWindow.setPrefSize(width * Sprite.SCALED_SIZE, height * Sprite.SCALED_SIZE);
+        stageWindow.setStyle("-fx-background-color: black;");
+
+        Label label = new Label("Stage " + level);
+        label.setTextFill(Color.WHITE);
+        label.setFont(Font.font("Roboto", FontWeight.BOLD, 30));
+
+        stageWindow.getChildren().add(label);
+
+        Scene stageScene = new Scene(stageWindow);
+
+        return stageScene;
+    }
+
+    public Scene gameScene(Stage theStage, Scene stageSceen) {
+        // full main scene
+        VBox fullScreen = new VBox();
+
+        HBox topBar = new HBox();
+        topBar.setPrefHeight(50);
+        topBar.setStyle("-fx-background-color: #cccccc; -fx-border-color: #dfdfdf; -fx-border-width: 5;");
+        InnerShadow innerShadow = new InnerShadow();
+        innerShadow.setBlurType(BlurType.ONE_PASS_BOX);
+        innerShadow.setOffsetX(-5);
+        innerShadow.setOffsetY(-5);
+        innerShadow.setColor(Color.web("#666666"));
+        topBar.setEffect(innerShadow);
+
+        HBox levelBox = new HBox();
+
+        Label titleLevel = new Label("Level: ");
+        titleLevel.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+
+        Label levelDisplay = new Label(String.valueOf(level));
+        levelDisplay.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+
+        levelBox.getChildren().addAll(titleLevel, levelDisplay);
+        levelBox.setPadding(new Insets(0, 0, 0, width * Sprite.SCALED_SIZE / 20));
+        levelBox.setAlignment(Pos.CENTER);
+
+        HBox timeBox = new HBox();
+
+        Label titleTime = new Label("Time: ");
+        titleTime.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+
+        Label timeDisplay = new Label();
+        time = new SimpleLongProperty(timeOfLevel);
+        timeDisplay.textProperty().bind(time.asString());
+        timeDisplay.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+        timeDisplay.textProperty().addListener(((observableValue, s, t1) -> {
+            if (t1 != null) {
+                if (Integer.parseInt(t1) <= 10) {
+                    timeDisplay.setTextFill(Color.RED);
+                    titleTime.setTextFill(Color.RED);
+                }
+            }
+        }));
+
+        timeBox.getChildren().addAll(titleTime, timeDisplay);
+        timeBox.setAlignment(Pos.CENTER_LEFT);
+        timeBox.setPadding(new Insets(0, width * Sprite.SCALED_SIZE / 10, 0, width * Sprite.SCALED_SIZE / 10));
+
+        HBox numberOfSouls = new HBox();
+
+        Label soulTitle = new Label("Souls: ");
+        soulTitle.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+
+        Label soulDisplay = new Label();
+        soulDisplay.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+        soulDisplay.textProperty().bind(souls.asString());
+        soulDisplay.textProperty().addListener(((observableValue, s, t1) -> {
+            if (t1 != null) {
+                if (Integer.parseInt(t1) == 0) {
+                    lose = true;
+                }
+            }
+        }));
+
+        numberOfSouls.getChildren().addAll(soulTitle, soulDisplay);
+        numberOfSouls.setAlignment(Pos.CENTER_LEFT);
+
+        HBox menuOptionBox = new HBox();
+
+        Label menuOption = new Label("MENU");
+        menuOption.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+        menuOption.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
+            if (t1) {
+                menuOption.setTextFill(Color.web("#cc3333"));
+            } else {
+                menuOption.setTextFill(Color.web("#333333"));
+            }
+        });
+
+        menuOptionBox.getChildren().add(menuOption);
+        menuOptionBox.setAlignment(Pos.CENTER_RIGHT);
+        menuOption.setPadding(new Insets(0, 0, 0, width * Sprite.SCALED_SIZE / 2));
+
+        topBar.getChildren().addAll(levelBox, timeBox, numberOfSouls, menuOptionBox);
+
+        Group root = new Group();
+        Canvas canvas = new Canvas(Sprite.SCALED_SIZE * width, Sprite.SCALED_SIZE * height);
+        System.out.println(canvas.getWidth() + " " + canvas.getHeight());
+        root.getChildren().add(canvas);
+
+        fullScreen.getChildren().addAll(topBar, root);
+        System.out.println(fullScreen.getWidth() + " " + fullScreen.getHeight());
+
+        Scene gameScene = new Scene(fullScreen);
+
+        menuOption.setOnMouseClicked(e -> {
+            clickMenu = true;
+            theStage.setScene(startScene(theStage, stageSceen, gameScene));
+        });
 
         gc = canvas.getGraphicsContext2D();
 
-        AnimationTimer timer = new AnimationTimer() {
-            private long startTime;
+        return gameScene;
+    }
 
-            @Override
-            public void start() {
-                startTime = System.currentTimeMillis();
-                super.start();
+    public Scene winScene(Stage theStage) {
+        // win scene
+        VBox winWindow = new VBox();
+        winWindow.setStyle("-fx-background-color: black;");
+        winWindow.setPrefSize(width * Sprite.SCALED_SIZE, height * Sprite.SCALED_SIZE);
+
+        Label statusGame = new Label();
+        if (level <= NUMBER_OF_LEVELS) statusGame.setText("YOU WIN");
+        else {
+            statusGame.setText("YOU WIN\nChưa có level mới");
+        }
+        statusGame.setTextAlignment(TextAlignment.CENTER);
+
+        statusGame.setTextFill(Color.WHITE);
+        statusGame.setFont(Font.font("Roboto", FontWeight.BOLD, 30));
+        winWindow.getChildren().add(statusGame);
+
+        HBox buttonBar = new HBox();
+        Button menuButton = new Button("MENU");
+        menuButton.setStyle("-fx-background-color: transparent;");
+        menuButton.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+        menuButton.setTextFill(Color.WHITE);
+        menuButton.setOnAction(e -> {
+            level = 1;
+            startGame = true;
+            BombermanGame.this.start(theStage);
+        });
+        menuButton.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
+            if (t1) {
+                menuButton.setTextFill(Color.web("#cc3333"));
+            } else {
+                menuButton.setTextFill(Color.WHITE);
             }
+        });
+        buttonBar.getChildren().add(menuButton);
 
-            @Override
-            public void stop() {
-                super.stop();
+        if (level <= NUMBER_OF_LEVELS) {
+            Button nextButton = new Button("NEXT");
+            nextButton.setStyle("-fx-background-color: transparent;");
+            nextButton.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+            nextButton.setTextFill(Color.WHITE);
+            nextButton.setOnAction(e -> {
+                Timeline timeline = new Timeline();
+                timeline.setCycleCount(1);
+
+                timeline.getKeyFrames().add(new KeyFrame(
+                        Duration.millis(0),
+                        event -> {
+                            theStage.setScene(stageScene(level));
+                        }
+                ));
+
+                timeline.getKeyFrames().add(new KeyFrame(
+                        Duration.millis(1000),
+                        event -> {
+                            BombermanGame.this.start(theStage);
+                        }
+                ));
+
+                timeline.play();
+            });
+            nextButton.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
+                if (t1) {
+                    nextButton.setTextFill(Color.web("#cc3333"));
+                } else {
+                    nextButton.setTextFill(Color.WHITE);
+                }
+            });
+            buttonBar.getChildren().add(nextButton);
+        }
+
+        buttonBar.setAlignment(Pos.CENTER);
+        buttonBar.setPadding(new Insets(height * Sprite.SCALED_SIZE / 10, 0, 0, 0));
+        winWindow.getChildren().add(buttonBar);
+        winWindow.setAlignment(Pos.CENTER);
+
+        Scene theWinScene = new Scene(winWindow);
+        return theWinScene;
+    }
+
+    public Scene loseScene(Stage theStage, Scene stageScene) {
+        VBox loseWindow = new VBox();
+        loseWindow.setStyle("-fx-background-color: black;");
+        loseWindow.setPrefSize(width * Sprite.SCALED_SIZE, height * Sprite.SCALED_SIZE);
+
+        Label statusGame = new Label("YOU LOSE");
+        statusGame.setTextFill(Color.WHITE);
+        statusGame.setFont(Font.font("Roboto", FontWeight.BOLD, 30));
+        loseWindow.getChildren().add(statusGame);
+
+        HBox buttonBar = new HBox();
+        Button menuButton = new Button("MENU");
+        menuButton.setStyle("-fx-background-color: transparent;");
+        menuButton.setFont(Font.font("Roboto", FontWeight.BOLD,  20));
+        menuButton.setTextFill(Color.WHITE);
+        menuButton.setOnAction(e -> {
+            level = 1;
+            lose = false;
+            startGame = true;
+            BombermanGame.this.start(theStage);
+        });
+        menuButton.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
+            if (t1) {
+                menuButton.setTextFill(Color.web("#cc3333"));
+            } else {
+                menuButton.setTextFill(Color.WHITE);
             }
+        });
 
-            private long lastUpdateMove = 0;
-            private long getLastUpdateStatic = 0;
+        Button restartButton = new Button("RESTART");
+        restartButton.setStyle("-fx-background-color: transparent;");
+        restartButton.setFont(Font.font("Roboto", FontWeight.BOLD,  20));
+        restartButton.setTextFill(Color.WHITE);
+        restartButton.setOnAction(e -> {
+            lose = false;
+            Timeline timeline = new Timeline();
+            timeline.setCycleCount(1);
 
-            @Override
-            public void handle(long l) {
-                long now = System.currentTimeMillis();
-
-                if (timeOfLevel - (now - startTime) / 1000 >= 0) {
-                    time.set(timeOfLevel - (now - startTime) / 1000);
-                }
-                render();
-                if (l - lastUpdateMove >= 50000000) {
-                    updateMove();
-                    lastUpdateMove = l;
-                }
-                if (l - getLastUpdateStatic >= 100000000) {
-                    updateStatic();
-                    getLastUpdateStatic = l;
-                }
-
-                if (lose) {
-                    stop();
-                    textMap = new ArrayList<>();
-                    win = false;
-
-                    input = new ArrayList<String>();
-                    stillObjects = new ArrayList<>();
-                    entities = new ArrayList<>();
-                    removeEntities = new ArrayList<>();
-                    souls = new SimpleIntegerProperty(3);
-
-                    VBox loseWindow = new VBox();
-                    loseWindow.setStyle("-fx-background-color: black;");
-                    loseWindow.setPrefSize(width * Sprite.SCALED_SIZE, height * Sprite.SCALED_SIZE);
-
-                    Label statusGame = new Label("YOU LOSE");
-                    statusGame.setTextFill(Color.WHITE);
-                    statusGame.setFont(Font.font("Roboto", FontWeight.BOLD, 30));
-                    loseWindow.getChildren().add(statusGame);
-
-                    HBox buttonBar = new HBox();
-                    Button menuButton = new Button("MENU");
-                    menuButton.setStyle("-fx-background-color: transparent;");
-                    menuButton.setFont(Font.font("Roboto", FontWeight.BOLD,  20));
-                    menuButton.setTextFill(Color.WHITE);
-                    menuButton.setOnAction(e -> {
-                        level = 1;
-                        lose = false;
-                        startGame = true;
-                        BombermanGame.this.start(theStage);
-                    });
-                    menuButton.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
-                        if (t1) {
-                            menuButton.setTextFill(Color.web("#cccccc"));
-                        } else {
-                            menuButton.setTextFill(Color.WHITE);
-                        }
-                    });
-                    menuButton.focusedProperty().addListener((observableValue, aBoolean, t1) -> {
-                        if (t1) {
-                            menuButton.setTextFill(Color.web("#cc3333"));
-                        }
-                    });
-
-                    Button restartButton = new Button("RESTART");
-                    restartButton.setStyle("-fx-background-color: transparent;");
-                    restartButton.setFont(Font.font("Roboto", FontWeight.BOLD,  20));
-                    restartButton.setTextFill(Color.WHITE);
-                    restartButton.setOnAction(e -> {
-                        lose = false;
-                        Timeline timeline = new Timeline();
-                        timeline.setCycleCount(1);
-
-                        timeline.getKeyFrames().add(new KeyFrame(
-                                Duration.millis(1000),
-                                event -> {
-                                    theStage.setScene(stageScene);
-                                }
-                        ));
-
-                        timeline.getKeyFrames().add(new KeyFrame(
-                                Duration.millis(2000),
-                                event -> {
-                                    //theStage.setScene(theScene);
-                                    BombermanGame.this.start(theStage);
-                                }
-                        ));
-
-                        timeline.play();
-                    });
-                    restartButton.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
-                        if (t1) {
-                            restartButton.setTextFill(Color.web("#cccccc"));
-                        } else {
-                            restartButton.setTextFill(Color.WHITE);
-                        }
-                    });
-                    restartButton.focusedProperty().addListener((observableValue, aBoolean, t1) -> {
-                        if (t1) {
-                            restartButton.setTextFill(Color.web("#cc3333"));
-                        }
-                    });
-
-                    buttonBar.getChildren().addAll(menuButton, restartButton);
-                    buttonBar.setAlignment(Pos.CENTER);
-                    buttonBar.setPadding(new Insets(height * Sprite.SCALED_SIZE / 10, 0, 0, 0));
-                    loseWindow.getChildren().add(buttonBar);
-                    loseWindow.setAlignment(Pos.CENTER);
-
-                    Scene theWinScene = new Scene(loseWindow);
-
-                    theStage.setScene(theWinScene);
-                }
-
-                if (win) {
-                    stop();
-                    level += 1;
-                    textMap = new ArrayList<>();
-                    win = false;
-
-                    input = new ArrayList<String>();
-                    stillObjects = new ArrayList<>();
-                    entities = new ArrayList<>();
-                    removeEntities = new ArrayList<>();
-                    souls = new SimpleIntegerProperty(3);
-
-                    // win scene
-                    VBox winWindow = new VBox();
-                    winWindow.setStyle("-fx-background-color: black;");
-                    winWindow.setPrefSize(width * Sprite.SCALED_SIZE, height * Sprite.SCALED_SIZE);
-
-                    Label statusGame = new Label();
-                    if (level <= NUMBER_OF_LEVELS) statusGame.setText("YOU WIN");
-                    else {
-                        statusGame.setText("YOU WIN\nChưa có level mới");
+            timeline.getKeyFrames().add(new KeyFrame(
+                    Duration.millis(0),
+                    event -> {
+                        theStage.setScene(stageScene);
                     }
-                    statusGame.setTextAlignment(TextAlignment.CENTER);
+            ));
 
-                    statusGame.setTextFill(Color.WHITE);
-                    statusGame.setFont(Font.font("Roboto", FontWeight.BOLD, 30));
-                    winWindow.getChildren().add(statusGame);
-
-                    HBox buttonBar = new HBox();
-                    Button menuButton = new Button("MENU");
-                    menuButton.setStyle("-fx-background-color: transparent;");
-                    menuButton.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
-                    menuButton.setTextFill(Color.WHITE);
-                    menuButton.setOnAction(e -> {
-                        level = 1;
-                        startGame = true;
+            timeline.getKeyFrames().add(new KeyFrame(
+                    Duration.millis(1000),
+                    event -> {
                         BombermanGame.this.start(theStage);
-                    });
-                    menuButton.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
-                        if (t1) {
-                            menuButton.setTextFill(Color.web("#cccccc"));
-                        } else {
-                            menuButton.setTextFill(Color.WHITE);
-                        }
-                    });
-                    menuButton.focusedProperty().addListener((observableValue, aBoolean, t1) -> {
-                        if (t1) {
-                            menuButton.setTextFill(Color.web("#cc3333"));
-                        }
-                    });
-                    buttonBar.getChildren().add(menuButton);
-
-                    if (level <= NUMBER_OF_LEVELS) {
-                        Button nextButton = new Button("NEXT");
-                        nextButton.setStyle("-fx-background-color: transparent;");
-                        nextButton.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
-                        nextButton.setTextFill(Color.WHITE);
-                        nextButton.setOnAction(e -> {
-                            Timeline timeline = new Timeline();
-                            timeline.setCycleCount(1);
-
-                            timeline.getKeyFrames().add(new KeyFrame(
-                                    Duration.millis(0),
-                                    event -> {
-                                        label.setText("Stage " + level);
-                                        theStage.setScene(stageScene);
-                                    }
-                            ));
-
-                            timeline.getKeyFrames().add(new KeyFrame(
-                                    Duration.millis(1000),
-                                    event -> {
-                                        //theStage.setScene(theScene);
-                                        BombermanGame.this.start(theStage);
-                                    }
-                            ));
-
-                            timeline.play();
-                        });
-                        nextButton.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
-                            if (t1) {
-                                nextButton.setTextFill(Color.web("#cccccc"));
-                            } else {
-                                nextButton.setTextFill(Color.WHITE);
-                            }
-                        });
-                        nextButton.focusedProperty().addListener((observableValue, aBoolean, t1) -> {
-                            if (t1) {
-                                nextButton.setTextFill(Color.web("#cc3333"));
-                            }
-                        });
-                        buttonBar.getChildren().add(nextButton);
                     }
+            ));
 
-                    buttonBar.setAlignment(Pos.CENTER);
-                    buttonBar.setPadding(new Insets(height * Sprite.SCALED_SIZE / 10, 0, 0, 0));
-                    winWindow.getChildren().add(buttonBar);
-                    winWindow.setAlignment(Pos.CENTER);
-
-                    Scene theWinScene = new Scene(winWindow);
-
-                    theStage.setScene(theWinScene);
-                }
+            timeline.play();
+        });
+        restartButton.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
+            if (t1) {
+                restartButton.setTextFill(Color.web("#cc3333"));
+            } else {
+                restartButton.setTextFill(Color.WHITE);
             }
-        };
-        timer.start();
+        });
 
-        createMap();
+        buttonBar.getChildren().addAll(menuButton, restartButton);
+        buttonBar.setAlignment(Pos.CENTER);
+        buttonBar.setPadding(new Insets(height * Sprite.SCALED_SIZE / 10, 0, 0, 0));
+        loseWindow.getChildren().add(buttonBar);
+        loseWindow.setAlignment(Pos.CENTER);
 
-        AnimatedImage bomberman = new Bomberman(1, 1, Sprite.player_right.getFxImage());
-        entities.add(bomberman);
-
-        theStage.show();
+        Scene theWinScene = new Scene(loseWindow);
+        return theWinScene;
     }
 
     public void updateMove() {
@@ -586,6 +642,7 @@ public class BombermanGame extends Application {
     }
 
     public void updateStatic() {
+        stillObjects.addAll(addStillObjects);
         stillObjects.forEach(e -> e.update());
     }
 
@@ -614,53 +671,21 @@ public class BombermanGame extends Application {
                     object = new Wall(j, i, Sprite.wall.getFxImage());
                 } else if (entity.equals("*")) {
                     object = new Brick(j, i, Sprite.brick.getFxImage());
-                } else if (entity.equals("x") || entity.equals("b")) {
+                } else if (entity.equals("x") || entity.equals("s") || entity.equals("f")) {
                     object = new Brick(j, i, Sprite.brick.getFxImage());
                 } else {
                     object = new Grass(j, i, Sprite.grass.getFxImage());
                     if (entity.equals("1")) {
-                        Image[] ballomFrames = {
-                                Sprite.balloom_left1.getFxImage(),
-                                Sprite.balloom_right1.getFxImage(),
-                                Sprite.balloom_left2.getFxImage(),
-                                Sprite.balloom_left2.getFxImage(),
-                                Sprite.balloom_left3.getFxImage(),
-                                Sprite.balloom_left3.getFxImage()
-                        };
-
-                        Image[] dieBallomFrames = {
-                                Sprite.balloom_dead.getFxImage(),
-                                Sprite.mob_dead1.getFxImage(),
-                                Sprite.mob_dead2.getFxImage(),
-                                Sprite.mob_dead3.getFxImage()
-                        };
-
-                        Enemy ballom = new Enemy(j, i, null);
-                        ballom.setNumberOfFrames(5);
-                        ballom.setFrames(ballomFrames);
-                        ballom.setDieFrames(dieBallomFrames);
+                        numberOfEnemies++;
+                        Balloom ballom = new Balloom(j, i, null);
                         entities.add(ballom);
                     } else if (entity.equals("2")) {
-                        Image[] onealFrames = {
-                                Sprite.oneal_right1.getFxImage(),
-                                Sprite.oneal_left1.getFxImage(),
-                                Sprite.oneal_right2.getFxImage(),
-                                Sprite.oneal_left2.getFxImage(),
-                                Sprite.oneal_right3.getFxImage(),
-                                Sprite.oneal_left3.getFxImage()
-                        };
-
-                        Image[] dieOnealFrames = {
-                                Sprite.oneal_dead.getFxImage(),
-                                Sprite.mob_dead1.getFxImage(),
-                                Sprite.mob_dead2.getFxImage(),
-                                Sprite.mob_dead3.getFxImage()
-                        };
-                        Enemy oneal = new Enemy(j, i, null);
-                        oneal.setNumberOfFrames(5);
-                        oneal.setFrames(onealFrames);
-                        oneal.setDieFrames(dieOnealFrames);
+                        numberOfEnemies++;
+                        Oneal oneal = new Oneal(j, i, null);
                         entities.add(oneal);
+                    } else if (entity.equals("p")) {
+                        AnimatedImage bomberman = new Bomberman(1, 1, Sprite.player_right.getFxImage());
+                        entities.add(bomberman);
                     }
                 }
                 if (object != null) stillObjects.add(object);

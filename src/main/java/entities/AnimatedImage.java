@@ -1,8 +1,11 @@
 package entities;
 
+import app.BombermanGame;
 import graphics.Sprite;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
+
+import java.util.ArrayList;
 
 public class AnimatedImage extends Entity {
     private Image[] frames = {null};
@@ -10,8 +13,10 @@ public class AnimatedImage extends Entity {
     private double positionY;
     private double width;
     private double height;
+    private int speed;
     private int index = 0;
     private boolean died = false;
+    protected String[] stillSymbols = {"#", "*", "x", "s", "f"};
 
     public AnimatedImage() {
         positionX = 0;
@@ -27,6 +32,14 @@ public class AnimatedImage extends Entity {
     }
     public void setIndex(int i) {
         this.index = i;
+    }
+
+    public int getSpeed() {
+        return speed;
+    }
+
+    public void setSpeed(int speed) {
+        this.speed = speed;
     }
 
     public boolean isDied() {
@@ -56,6 +69,13 @@ public class AnimatedImage extends Entity {
     {
         positionX = x;
         positionY = y;
+    }
+
+    public boolean checkCollisionToStillObjects(String[] symbols, String type) {
+        for (String s: symbols) {
+            if (this.checkCollision(BombermanGame.textMap, s, type, this.getSpeed())) return false;
+        }
+        return true;
     }
 
     @Override

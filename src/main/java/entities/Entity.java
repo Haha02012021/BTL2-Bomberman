@@ -5,7 +5,8 @@ import java.util.List;
 
 import app.BombermanGame;
 import entities.move_entity.Bomberman;
-import entities.move_entity.Enemy;
+import entities.move_entity.enemies.Enemy;
+import entities.static_entity.Brick;
 import graphics.Sprite;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.GraphicsContext;
@@ -60,11 +61,14 @@ public abstract class Entity {
         gc.drawImage(img, x, y);
     }
 
-    public boolean checkCollision(List<List<String>> map, String symbol, String type) {
+    public boolean checkCollision(List<List<String>> map, String symbol, String type, int speed) {
         int size = Sprite.SCALED_SIZE;
 
         if (type.equals("RIGHT")) {
             int nextX = (int)(this.getX() + size) / size;
+            if (this instanceof Bomberman || this instanceof Enemy) {
+                nextX = (int) (this.getX() + size + speed - speed / 4) / size;
+            }
             double nextDoubleY = this.getY() / size;
             int nextY = (int)nextDoubleY;
             if (nextY < nextDoubleY) {
@@ -75,7 +79,10 @@ public abstract class Entity {
         }
 
         if (type.equals("LEFT")) {
-            int nextX = (int)(this.getX() - 4) / size;
+            int nextX = (int)(this.getX() - size) / size;
+            if (this instanceof Bomberman || this instanceof Enemy) {
+                nextX = (int) (this.getX() - speed) / size;
+            }
             double nextDoubleY = this.getY() / size;
             int nextY = (int)nextDoubleY;
             if (nextY < nextDoubleY) {
@@ -89,6 +96,9 @@ public abstract class Entity {
             double nextDoubleX = (this.getX()) / size;
             int nextX = (int)nextDoubleX;
             int nextY = (int)(this.getY() + size) / size;
+            if (this instanceof Bomberman || this instanceof Enemy) {
+                nextY = (int) (this.getY() + size + speed - speed / 4) / size;
+            }
             if (nextDoubleX - nextX > 0.2) {
                 return map.get(nextY).get(nextX).equals(symbol) || map.get(nextY).get(nextX + 1).equals(symbol);
             } else {
@@ -99,7 +109,10 @@ public abstract class Entity {
         if (type.equals("UP")) {
             double nextDoubleX = (this.getX()) / size;
             int nextX = (int)nextDoubleX;
-            int nextY = (int)(this.getY() - 1) / size;
+            int nextY = (int)(this.getY() - size) / size;
+            if (this instanceof Bomberman || this instanceof Enemy) {
+                nextY = (int) (this.getY() - speed) / size;
+            }
             if (nextDoubleX - nextX > 0.2) {
                 return map.get(nextY).get(nextX).equals(symbol) || map.get(nextY).get(nextX + 1).equals(symbol);
             } else {
@@ -115,10 +128,23 @@ public abstract class Entity {
         Rectangle2D e = new Rectangle2D(this.getX(), this.getY(), Sprite.SCALED_SIZE, Sprite.SCALED_SIZE);
         if (this instanceof Bomberman) {
             for (AnimatedImage entity: entities) {
-                if (!(entity instanceof Bomberman)) {
+                if (!(entity instanceof Bomberman) && !(entity instanceof Brick)) {
                     Rectangle2D c = new Rectangle2D(entity.getX(), entity.getY(), Sprite.SCALED_SIZE, Sprite.SCALED_SIZE);
                     if (c.intersects(e)) {
                         ((Bomberman) this).setDied(true);
+                    }
+                } else {
+                    Rectangle2D c = new Rectangle2D(entity.getX(), entity.getY(), Sprite.SCALED_SIZE, Sprite.SCALED_SIZE);
+                    if (entity instanceof Brick && c.intersects(e)) {
+                        if (!((Brick) entity).isHiddenPSpeed()) {
+                            ((Bomberman) this).setEatedSpeed(true);
+                            BombermanGame.removeEntities.add(entity);
+                        }
+                        if (!((Brick) entity).isHiddenPFlame()) {
+                            ((Bomberman) this).setEatedFlames(true);
+                            BombermanGame.removeEntities.add(entity);
+                        }
+
                     }
                 }
             }
