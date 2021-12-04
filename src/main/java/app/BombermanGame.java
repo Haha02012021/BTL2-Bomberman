@@ -1,6 +1,7 @@
 package app;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -11,9 +12,7 @@ import java.util.regex.Pattern;
 import entities.AnimatedImage;
 import entities.Entity;
 import entities.move_entity.Bomberman;
-import entities.move_entity.enemies.Balloom;
-import entities.move_entity.enemies.Enemy;
-import entities.move_entity.enemies.Oneal;
+import entities.move_entity.enemies.*;
 import entities.static_entity.Brick;
 import entities.static_entity.Grass;
 import entities.static_entity.Wall;
@@ -47,48 +46,51 @@ import javafx.util.Duration;
 
 // Collect the Money Bags!
 public class BombermanGame extends Application {
+    //general
+    private GraphicsContext gc;
+    public static VBox fullScreen;
+    private static final int NUMBER_OF_LEVELS = 2;
+    public static int timeLimitMove = 100;
+    private static long timeLimitStill = 120;
+    public static ArrayList<String> inputKey = new ArrayList<String>();
+    public static AnimationTimer timer;
+    private int scoreOfGame = 0;
+
+    //properties of level
     public static int width;
     public static int height;
-    private static final int NUMBER_OF_LEVELS = 2;
     public static int numberOfEnemies;
-    public static int timeLimitMove = 100;
-
-    private long stageTime = 3;
     public static int level = 1;
     private static int timeOfLevel;
-    private LongProperty time;
+    public static LongProperty time;
+    public static IntegerProperty score;
+    public static IntegerProperty souls = new SimpleIntegerProperty(3);
     public static List<List<String>> textMap = new ArrayList<>();
+
+    //stage of game
     public static boolean win = false;
     public static boolean lose = false;
-    private boolean startGame = true;
-    private boolean clickMenu = false;
+    public static boolean startGame = true;
+    public static boolean clickMenu = false;
+    public static boolean running = false;
 
-    public static ArrayList<String> input = new ArrayList<String>();
-    private GraphicsContext gc;
+    //manage characters
     public static ArrayList<Entity> stillObjects = new ArrayList<>();
     public static ArrayList<Entity> addStillObjects = new ArrayList<>();
     public static ArrayList<AnimatedImage> entities = new ArrayList<>();
     public static ArrayList<AnimatedImage> removeEntities = new ArrayList<>();
-    public static IntegerProperty souls = new SimpleIntegerProperty(3);
 
-    public static ArrayList<Entity> getStillObjects() {
-        return stillObjects;
-    }
-
-    public static void addStillObjects(Entity entity) {
-        stillObjects.add(entity);
-    }
-
-    public static void removeStillObjects(Entity entity) {
-        stillObjects.remove(entity);
-    }
+    //main character
+    public static Bomberman bomberman;
+    public static int startManX;
+    public static int startManY;
 
     public static void main(String[] args) {
         launch(args);
     }
 
     @Override
-    public void start(Stage theStage) {
+    public void start(Stage theStage) throws IOException {
         theStage.setTitle("Bomberman Game!");
         theStage.setResizable(false);
 
@@ -106,14 +108,14 @@ public class BombermanGame extends Application {
         } else {
             theStage.setScene(gameScene);
         }
-        theStage.getIcons().add(new Image(getClass().getResourceAsStream("angry.png")));
+        theStage.getIcons().add(new Image(BombermanGame.class.getResourceAsStream("image/angry.png")));
 
         gameScene.setOnKeyPressed(
                 new EventHandler<KeyEvent>() {
                     public void handle(KeyEvent e) {
                         String code = e.getCode().toString();
-                        if (!input.contains(code))
-                            input.add(code);
+                        if (!inputKey.contains(code))
+                            inputKey.add(code);
                     }
                 });
 
@@ -121,11 +123,11 @@ public class BombermanGame extends Application {
                 new EventHandler<KeyEvent>() {
                     public void handle(KeyEvent e) {
                         String code = e.getCode().toString();
-                        input.remove(code);
+                        inputKey.remove(code);
                     }
                 });
 
-        AnimationTimer timer = new AnimationTimer() {
+        timer = new AnimationTimer() {
             private long startTime;
 
             @Override
@@ -141,55 +143,46 @@ public class BombermanGame extends Application {
 
             private long lastUpdateMove = 0;
             private long getLastUpdateStatic = 0;
+            private long lastUpdateDie = 0;
+            private long saveTime = 0;
 
             @Override
             public void handle(long l) {
                 long now = System.currentTimeMillis();
 
-                if (timeOfLevel - (now - startTime) / 1000 >= 0) {
-                    if (!clickMenu) time.set(timeOfLevel - (now - startTime) / 1000);
-                }
-                render();
-                if (now - lastUpdateMove >= timeLimitMove) {
-                    updateMove();
-                    lastUpdateMove = now;
-                }
-                if (now - getLastUpdateStatic >= 100) {
-                    updateStatic();
-                    getLastUpdateStatic = now;
+                if (!clickMenu && running) {
+                    if (timeOfLevel - 1 >= 0) {
+                        if ((int)(now - startTime) / 1000 != saveTime) timeOfLevel -= 1;
+                        time.set(timeOfLevel);
+                        saveTime = (int)(now - startTime) / 1000;
+                    }
+                    render();
+                    if (now - lastUpdateMove >= timeLimitMove) {
+                        updateMove();
+                        lastUpdateMove = now;
+                    }
+                    if (now - getLastUpdateStatic >= timeLimitStill) {
+                        updateStatic();
+                        getLastUpdateStatic = now;
+                    }
+
+                    if (lose) {
+                        resetGame();
+
+                        Scene loseScene = loseScene(theStage, stageScene);
+                        theStage.setScene(loseScene);
+                    }
+
+                    if (win) {
+                        resetGame();
+
+                        level += 1;
+                        scoreOfGame = score.get();
+                        Scene winScene = winScene(theStage);
+                        theStage.setScene(winScene);
+                    }
                 }
 
-                if (lose) {
-                    stop();
-                    textMap.clear();
-                    win = false;
-
-                    timeLimitMove = 100;
-                    input.clear();
-                    stillObjects.clear();
-                    entities.clear();
-                    removeEntities.clear();
-                    addStillObjects.clear();
-                    souls = new SimpleIntegerProperty(3);
-                    Scene loseScene = loseScene(theStage, stageScene);
-                    theStage.setScene(loseScene);
-                }
-
-                if (win) {
-                    stop();
-                    level += 1;
-                    textMap.clear();
-                    win = false;
-
-                    input.clear();
-                    stillObjects.clear();
-                    entities.clear();
-                    removeEntities.clear();
-                    addStillObjects.clear();
-                    souls = new SimpleIntegerProperty(3);
-                    Scene winScene = winScene(theStage);
-                    theStage.setScene(winScene);
-                }
             }
         };
         timer.start();
@@ -199,8 +192,137 @@ public class BombermanGame extends Application {
         theStage.show();
     }
 
+    //update characters
+    public void updateMove() {
+        entities.removeAll(removeEntities);
+        entities.forEach(e -> {
+            e.update();
+        });
+    }
+
+    public void updateStatic() {
+        stillObjects.addAll(addStillObjects);
+        stillObjects.forEach(e -> e.update());
+    }
+
+    //render characters
+    public void render() {
+        gc.clearRect(0, 0, width * Sprite.SCALED_SIZE, height * Sprite.SCALED_SIZE);
+        stillObjects.forEach(g -> {
+            if (g instanceof Bomb) {
+                ((Bomb) g).render(gc, ((Bomb) g).getIndex());
+            } else if (g instanceof ChildExplosion) {
+                ((ChildExplosion) g).render(gc, ((ChildExplosion) g).getIndex());
+            } else if (g instanceof Brick) {
+                ((Brick) g).render(gc, ((Brick) g).getIndex());
+            } else g.render(gc);
+        });
+        entities.forEach(g -> g.render(gc, g.getIndex()));
+    }
+
+    //build map
+    private void createMap() {
+        System.out.println("create map");
+        for (int i = 0; i < textMap.size(); i++) {
+            List<String> lineMap = textMap.get(i);
+            for (int j = 0; j < lineMap.size(); j++) {
+                Entity object = null;
+                String entity = lineMap.get(j);
+                if (entity.equals("#")) {
+                    object = new Wall(j, i, Sprite.wall.getFxImage());
+                } else if (entity.equals("*")) {
+                    object = new Brick(j, i, Sprite.brick.getFxImage());
+                } else if (entity.equals("x") || entity.equals("s") || entity.equals("f") || entity.equals("d")) {
+                    object = new Brick(j, i, Sprite.brick.getFxImage());
+                } else {
+                    object = new Grass(j, i, Sprite.grass.getFxImage());
+                    if (entity.equals("1")) {
+                        numberOfEnemies++;
+                        Balloom ballom = new Balloom(j, i, null);
+                        entities.add(ballom);
+                    } else if (entity.equals("2")) {
+                        numberOfEnemies++;
+                        Oneal oneal = new Oneal(j, i, null);
+                        entities.add(oneal);
+                    } else if (entity.equals("3")) {
+                        numberOfEnemies++;
+                        Doll doll = new Doll(j, i, null);
+                        entities.add(doll);
+                    } else if (entity.equals("4")) {
+                        numberOfEnemies++;
+                        Kondoria kondoria = new Kondoria(j, i, null);
+                        entities.add(kondoria);
+                    } else if (entity.equals("5")) {
+                        numberOfEnemies++;
+                        Minvo minvo = new Minvo(j, i, null);
+                        entities.add(minvo);
+                    } else if (entity.equals("6")) {
+                        numberOfEnemies++;
+                        Ghost ghost = new Ghost(j, i, null);
+                        entities.add(ghost);
+                    } else if (entity.equals("p")) {
+                        bomberman = new Bomberman(j, i, Sprite.player_right.getFxImage());
+                        entities.add(bomberman);
+                        startManX = j;
+                        startManY = i;
+                    }
+                    BombermanGame.textMap.get(i).set(j, " ");
+                }
+                if (object != null) stillObjects.add(object);
+            }
+        }
+    }
+
+    public void readMap() {
+        try {
+            File file = new File(getClass().getResource("level/Level" + level + ".txt").toURI());
+            Pattern p1 = Pattern.compile("^([0-9]+\\s)([0-9]+\\s)([0-9]+)");
+            Pattern p2 = Pattern.compile("^#");
+            Matcher m1;
+            Matcher m2;
+            Scanner scanner = new Scanner(file);
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                m1 = p1.matcher(line);
+                m2 = p2.matcher(line);
+                if (m1.find()) {
+                    height = Integer.parseInt(m1.group(2).trim());
+                    width = Integer.parseInt(m1.group(3).trim());
+                } else if (m2.find()) {
+                    List<String> lineMap = new ArrayList<>();
+                    lineMap = Arrays.asList(line.split(""));
+                    if (line.length() == width) textMap.add(lineMap);
+                }
+            }
+            timeOfLevel = 50 + level * 50;
+            scanner.close();
+        } catch (Exception e) {
+            //TODO: handle exception
+            System.out.println(e.getMessage());
+        }
+    }
+
+    //reset properties of game
+    public static void resetGame() {
+        //reset general
+        timer.stop();
+        inputKey.clear();
+        souls = new SimpleIntegerProperty(3);
+
+        //reset stage of game
+        win = false;
+        lose = false;
+
+        //reset map
+        textMap.clear();
+        stillObjects.clear();
+        entities.clear();
+        removeEntities.clear();
+        addStillObjects.clear();
+    }
+
+    //sceens
     public Scene startScene(Stage theStage, Scene stageScene, Scene gameScene) {
-        // start scene
         VBox startWindow = new VBox();
         startWindow.setStyle("-fx-background-color: black;");
         startWindow.setPrefSize(width * Sprite.SCALED_SIZE, height * Sprite.SCALED_SIZE);
@@ -214,60 +336,7 @@ public class BombermanGame extends Application {
         Button tutorialButton = new Button("TUTORIAL");
         styleButton(tutorialButton, Color.WHITE);
         tutorialButton.setOnAction(e -> {
-            VBox tutorialWindow = new VBox();
-            tutorialWindow.setStyle("-fx-background-color: black;");
-            tutorialWindow.setPadding(new Insets(20, width * Sprite.SCALED_SIZE / 5, 20, width * Sprite.SCALED_SIZE / 5));
-            tutorialWindow.setPrefSize(width * Sprite.SCALED_SIZE, height * Sprite.SCALED_SIZE);
-
-            Label title = new Label("Hướng dẫn");
-            title.setFont(Font.font("Roboto", FontWeight.BOLD, 30));
-            title.setTextFill(Color.web("#cc3333"));
-
-            TextFlow tf = new TextFlow();
-            Text t = new Text("⁂ Luật chơi: " +
-                    "\n- Bomberman di chuyển trên cỏ. " +
-                    "\n- Bomberman thả bom để phá gạch và giết Enemy." +
-                    "\n- Bomberman chết khi chạm phải vụ nổ và Enemy." +
-                    "\n- Bomberman qua màn khi nổ hết Enemy & đi qua cổng." +
-                    "\n- Cổng ẩn dưới gạch." +
-                    "\n- Tự tìm hiểu để ăn các sức mạnh bằng kinh nghiệm :).");
-            t.setFill(Color.WHITE);
-            t.setFont(Font.font(20));
-            tf.getChildren().add(t);
-            tf.setPadding(new Insets(10, 0, 0, 0));
-
-            TextFlow tf1 = new TextFlow();
-            Text t1 = new Text("⁂ Phím bấm: " +
-                    "\n- Bấm các phím mũi tên để di chuyển." +
-                    "\n- Bấm phím SPACE để thả bom." +
-                    "\n- Bấm phím R để tiếp tục màn chơi khi Bomberman chết.");
-            t1.setFill(Color.WHITE);
-            t1.setFont(Font.font(20));
-            tf1.getChildren().add(t1);
-            tf1.setPadding(new Insets(10, 0, 0, 0));
-
-            Label goBack = new Label("BACK");
-            goBack.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
-            goBack.setTextFill(Color.WHITE);
-            goBack.setOnMouseClicked(event -> {
-                theStage.setScene(startWindow.getScene());
-            });
-
-            Pane pane = new Pane(goBack);
-            goBack.hoverProperty().addListener((observableValue, aBoolean, t11) -> {
-                if (t11) {
-                    goBack.setTextFill(Color.web("#cc3333"));
-                } else {
-                    goBack.setTextFill(Color.WHITE);
-                }
-            });
-
-            goBack.setLayoutX(pane.getLayoutX() + Sprite.SCALED_SIZE * (width - 10));
-
-            tutorialWindow.getChildren().addAll(title, tf, tf1, pane);
-
-            Scene tutorialScene = new Scene(tutorialWindow);
-
+            Scene tutorialScene = tutorialScene(theStage, startWindow.getScene());
             theStage.setScene(tutorialScene);
         });
 
@@ -304,6 +373,7 @@ public class BombermanGame extends Application {
         if (clickMenu) startButton.setText("RESTART");
         styleButton(startButton, Color.WHITE);
         startButton.setOnAction(e -> {
+            running = true;
             Timeline timeline = new Timeline();
             timeline.setCycleCount(1);
 
@@ -319,17 +389,12 @@ public class BombermanGame extends Application {
                     event -> {
                         if (!clickMenu) theStage.setScene(gameScene);
                         else {
-                            textMap.clear();
-                            win = false;
-                            lose = false;
-
-                            timeLimitMove = 100;
-                            input.clear();
-                            stillObjects.clear();
-                            entities.clear();
-                            removeEntities.clear();
-                            addStillObjects.clear();
-                            BombermanGame.this.start(theStage);
+                            resetGame();
+                            try {
+                                BombermanGame.this.start(theStage);
+                            } catch (IOException ex) {
+                                ex.printStackTrace();
+                            }
                             clickMenu = false;
                         }
                     }
@@ -340,7 +405,7 @@ public class BombermanGame extends Application {
 
         buttonBar.getChildren().addAll(tutorialButton, continueButton, startButton);
         buttonBar.setAlignment(Pos.CENTER);
-        buttonBar.setPadding(new Insets(height * Sprite.SCALED_SIZE / 10, 0, 0, 0));
+        buttonBar.setPadding(new Insets(height * Sprite.SCALED_SIZE / 24, 0, 0, 0));
         startWindow.getChildren().add(buttonBar);
         startWindow.setAlignment(Pos.CENTER);
 
@@ -349,17 +414,71 @@ public class BombermanGame extends Application {
         return theStartScene;
     }
 
-    public void styleButton(Button button, Color color) {
-        button.setStyle("-fx-background-color: transparent;");
-        button.setFont(Font.font("Roboto", FontWeight.BOLD,  20));
-        button.setTextFill(color);
-        button.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
-            if (t1) {
-                button.setTextFill(Color.web("#cc3333"));
+    public Scene levelScene(Stage theStage, Scene startScene) {
+        VBox levelBox = new VBox();
+
+
+        Scene levelScene = new Scene(levelBox);
+
+        return levelScene;
+    }
+
+    public Scene tutorialScene(Stage theStage, Scene startScene) {
+        VBox tutorialWindow = new VBox();
+        tutorialWindow.setStyle("-fx-background-color: black;");
+        tutorialWindow.setPadding(new Insets(20, width * Sprite.SCALED_SIZE / 5, 20, width * Sprite.SCALED_SIZE / 5));
+        tutorialWindow.setPrefSize(width * Sprite.SCALED_SIZE, height * Sprite.SCALED_SIZE);
+
+        Label title = new Label("Hướng dẫn");
+        title.setFont(Font.font("Roboto", FontWeight.BOLD, 30));
+        title.setTextFill(Color.web("#cc3333"));
+
+        TextFlow tf = new TextFlow();
+        Text t = new Text("⁂ Luật chơi: " +
+                "\n- Bomberman di chuyển trên cỏ. " +
+                "\n- Bomberman thả bom để phá gạch và giết Enemy." +
+                "\n- Bomberman chết khi chạm phải vụ nổ và Enemy." +
+                "\n- Bomberman qua màn khi nổ hết Enemy & đi qua cổng." +
+                "\n- Cổng ẩn dưới gạch." +
+                "\n- Tự tìm hiểu để ăn các sức mạnh bằng kinh nghiệm :).");
+        t.setFill(Color.WHITE);
+        t.setFont(Font.font(20));
+        tf.getChildren().add(t);
+        tf.setPadding(new Insets(10, 0, 0, 0));
+
+        TextFlow tf1 = new TextFlow();
+        Text t1 = new Text("⁂ Phím bấm: " +
+                "\n- Bấm các phím mũi tên để di chuyển." +
+                "\n- Bấm phím SPACE để thả bom." +
+                "\n- Bấm phím R để tiếp tục màn chơi khi Bomberman chết.");
+        t1.setFill(Color.WHITE);
+        t1.setFont(Font.font(20));
+        tf1.getChildren().add(t1);
+        tf1.setPadding(new Insets(10, 0, 0, 0));
+
+        Label goBack = new Label("BACK");
+        goBack.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+        goBack.setTextFill(Color.WHITE);
+        goBack.setOnMouseClicked(event -> {
+            theStage.setScene(startScene);
+        });
+
+        Pane pane = new Pane(goBack);
+        goBack.hoverProperty().addListener((observableValue, aBoolean, t11) -> {
+            if (t11) {
+                goBack.setTextFill(Color.web("#cc3333"));
             } else {
-                button.setTextFill(color);
+                goBack.setTextFill(Color.WHITE);
             }
         });
+
+        goBack.setLayoutX(pane.getLayoutX() + Sprite.SCALED_SIZE * (width - 10));
+
+        tutorialWindow.getChildren().addAll(title, tf, tf1, pane);
+
+        Scene tutorialScene = new Scene(tutorialWindow);
+
+        return tutorialScene;
     }
 
     public Scene stageScene(int level) {
@@ -381,7 +500,7 @@ public class BombermanGame extends Application {
 
     public Scene gameScene(Stage theStage, Scene stageSceen) {
         // full main scene
-        VBox fullScreen = new VBox();
+        fullScreen = new VBox();
 
         HBox topBar = new HBox();
         topBar.setPrefHeight(50);
@@ -402,7 +521,7 @@ public class BombermanGame extends Application {
         levelDisplay.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
 
         levelBox.getChildren().addAll(titleLevel, levelDisplay);
-        levelBox.setPadding(new Insets(0, 0, 0, width * Sprite.SCALED_SIZE / 20));
+        levelBox.setPadding(new Insets(0, 0, 0, width * Sprite.SCALED_SIZE / 24));
         levelBox.setAlignment(Pos.CENTER);
 
         HBox timeBox = new HBox();
@@ -425,7 +544,21 @@ public class BombermanGame extends Application {
 
         timeBox.getChildren().addAll(titleTime, timeDisplay);
         timeBox.setAlignment(Pos.CENTER_LEFT);
-        timeBox.setPadding(new Insets(0, width * Sprite.SCALED_SIZE / 10, 0, width * Sprite.SCALED_SIZE / 10));
+        timeBox.setPadding(new Insets(0, width * Sprite.SCALED_SIZE / 24, 0, width * Sprite.SCALED_SIZE / 24));
+
+        HBox scoreBox = new HBox();
+
+        Label titleScore = new Label("Scores: ");
+        titleScore.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+
+        Label scoresDisplay = new Label();
+        score = new SimpleIntegerProperty(scoreOfGame);
+        scoresDisplay.textProperty().bind(score.asString());
+        scoresDisplay.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+
+        scoreBox.getChildren().addAll(titleScore, scoresDisplay);
+        scoreBox.setAlignment(Pos.CENTER_LEFT);
+        scoreBox.setPadding(new Insets(0, width * Sprite.SCALED_SIZE / 24, 0, width * Sprite.SCALED_SIZE / 24));
 
         HBox numberOfSouls = new HBox();
 
@@ -462,7 +595,7 @@ public class BombermanGame extends Application {
         menuOptionBox.setAlignment(Pos.CENTER_RIGHT);
         menuOption.setPadding(new Insets(0, 0, 0, width * Sprite.SCALED_SIZE / 2));
 
-        topBar.getChildren().addAll(levelBox, timeBox, numberOfSouls, menuOptionBox);
+        topBar.getChildren().addAll(levelBox, timeBox, numberOfSouls, scoreBox, menuOptionBox);
 
         Group root = new Group();
         Canvas canvas = new Canvas(Sprite.SCALED_SIZE * width, Sprite.SCALED_SIZE * height);
@@ -509,7 +642,11 @@ public class BombermanGame extends Application {
         menuButton.setOnAction(e -> {
             level = 1;
             startGame = true;
-            BombermanGame.this.start(theStage);
+            try {
+                BombermanGame.this.start(theStage);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         });
         menuButton.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
             if (t1) {
@@ -539,7 +676,11 @@ public class BombermanGame extends Application {
                 timeline.getKeyFrames().add(new KeyFrame(
                         Duration.millis(1000),
                         event -> {
-                            BombermanGame.this.start(theStage);
+                            try {
+                                BombermanGame.this.start(theStage);
+                            } catch (IOException ex) {
+                                ex.printStackTrace();
+                            }
                         }
                 ));
 
@@ -556,7 +697,7 @@ public class BombermanGame extends Application {
         }
 
         buttonBar.setAlignment(Pos.CENTER);
-        buttonBar.setPadding(new Insets(height * Sprite.SCALED_SIZE / 10, 0, 0, 0));
+        buttonBar.setPadding(new Insets(height * Sprite.SCALED_SIZE / 24, 0, 0, 0));
         winWindow.getChildren().add(buttonBar);
         winWindow.setAlignment(Pos.CENTER);
 
@@ -583,7 +724,11 @@ public class BombermanGame extends Application {
             level = 1;
             lose = false;
             startGame = true;
-            BombermanGame.this.start(theStage);
+            try {
+                BombermanGame.this.start(theStage);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         });
         menuButton.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
             if (t1) {
@@ -612,7 +757,11 @@ public class BombermanGame extends Application {
             timeline.getKeyFrames().add(new KeyFrame(
                     Duration.millis(1000),
                     event -> {
-                        BombermanGame.this.start(theStage);
+                        try {
+                            BombermanGame.this.start(theStage);
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                        }
                     }
             ));
 
@@ -628,7 +777,7 @@ public class BombermanGame extends Application {
 
         buttonBar.getChildren().addAll(menuButton, restartButton);
         buttonBar.setAlignment(Pos.CENTER);
-        buttonBar.setPadding(new Insets(height * Sprite.SCALED_SIZE / 10, 0, 0, 0));
+        buttonBar.setPadding(new Insets(height * Sprite.SCALED_SIZE / 24, 0, 0, 0));
         loseWindow.getChildren().add(buttonBar);
         loseWindow.setAlignment(Pos.CENTER);
 
@@ -636,89 +785,16 @@ public class BombermanGame extends Application {
         return theWinScene;
     }
 
-    public void updateMove() {
-        entities.removeAll(removeEntities);
-        entities.forEach(e -> e.update());
-    }
-
-    public void updateStatic() {
-        stillObjects.addAll(addStillObjects);
-        stillObjects.forEach(e -> e.update());
-    }
-
-    public void render() {
-        gc.clearRect(0, 0, width * Sprite.SCALED_SIZE, height * Sprite.SCALED_SIZE);
-        stillObjects.forEach(g -> {
-            if (g instanceof Bomb) {
-                ((Bomb) g).render(gc, ((Bomb) g).getIndex());
-            } else if (g instanceof ChildExplosion) {
-                ((ChildExplosion) g).render(gc, ((ChildExplosion) g).getIndex());
-            } else if (g instanceof Brick) {
-                ((Brick) g).render(gc, ((Brick) g).getIndex());
-            } else g.render(gc);
+    public void styleButton(Button button, Color color) {
+        button.setStyle("-fx-background-color: transparent;");
+        button.setFont(Font.font("Roboto", FontWeight.BOLD,  20));
+        button.setTextFill(color);
+        button.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
+            if (t1) {
+                button.setTextFill(Color.web("#cc3333"));
+            } else {
+                button.setTextFill(color);
+            }
         });
-        entities.forEach(g -> g.render(gc, g.getIndex()));
-    }
-
-    private void createMap() {
-        System.out.println("create map");
-        for (int i = 0; i < textMap.size(); i++) {
-            List<String> lineMap = textMap.get(i);
-            for (int j = 0; j < lineMap.size(); j++) {
-                Entity object = null;
-                String entity = lineMap.get(j);
-                if (entity.equals("#")) {
-                    object = new Wall(j, i, Sprite.wall.getFxImage());
-                } else if (entity.equals("*")) {
-                    object = new Brick(j, i, Sprite.brick.getFxImage());
-                } else if (entity.equals("x") || entity.equals("s") || entity.equals("f")) {
-                    object = new Brick(j, i, Sprite.brick.getFxImage());
-                } else {
-                    object = new Grass(j, i, Sprite.grass.getFxImage());
-                    if (entity.equals("1")) {
-                        numberOfEnemies++;
-                        Balloom ballom = new Balloom(j, i, null);
-                        entities.add(ballom);
-                    } else if (entity.equals("2")) {
-                        numberOfEnemies++;
-                        Oneal oneal = new Oneal(j, i, null);
-                        entities.add(oneal);
-                    } else if (entity.equals("p")) {
-                        AnimatedImage bomberman = new Bomberman(1, 1, Sprite.player_right.getFxImage());
-                        entities.add(bomberman);
-                    }
-                }
-                if (object != null) stillObjects.add(object);
-            }
-        }
-    }
-
-    public void readMap() {
-        try {
-            File file = new File(getClass().getResource("Level" + level + ".txt").toURI());
-            Pattern p1 = Pattern.compile("^([0-9]+\\s)([0-9]+\\s)([0-9]+)");
-            Pattern p2 = Pattern.compile("^#");
-            Matcher m1;
-            Matcher m2;
-            Scanner scanner = new Scanner(file);
-            while (scanner.hasNextLine()) {
-                String line = scanner.nextLine();
-                m1 = p1.matcher(line);
-                m2 = p2.matcher(line);
-                if (m1.find()) {
-                    height = Integer.parseInt(m1.group(2).trim());
-                    width = Integer.parseInt(m1.group(3).trim());
-                } else if (m2.find()) {
-                    List<String> lineMap = new ArrayList<>();
-                    lineMap = Arrays.asList(line.split(""));
-                    if (line.length() == width) textMap.add(lineMap);
-                }
-            }
-            timeOfLevel = 100 + level * 100;
-            scanner.close();
-        } catch (Exception e) {
-            //TODO: handle exception
-            System.out.println(e.getMessage());
-        }
     }
 }

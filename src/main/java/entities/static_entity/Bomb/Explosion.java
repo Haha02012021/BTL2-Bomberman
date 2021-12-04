@@ -9,6 +9,7 @@ import java.util.ArrayList;
 
 public class Explosion extends AnimatedImage {
     private int x, y;
+    private int numberofCells = 1;
     private boolean powerUp = false;
 
     private Image[] topExplosionFrames = {Sprite.explosion_vertical_top_last.getFxImage(), Sprite.explosion_vertical_top_last1.getFxImage(), Sprite.explosion_vertical_top_last2.getFxImage(), null};
@@ -24,6 +25,7 @@ public class Explosion extends AnimatedImage {
     private ArrayList<ChildExplosion> horizontalRightExplosion = new ArrayList<>();
     private ArrayList<ChildExplosion> verticalTopExplosion = new ArrayList<>();
     private ArrayList<ChildExplosion> verticalDownExplosion = new ArrayList<>();
+
     private ChildExplosion topExplosion;
     private ChildExplosion downExplosion;
     private ChildExplosion leftExplosion;
@@ -43,21 +45,29 @@ public class Explosion extends AnimatedImage {
         this.powerUp = powerUp;
     }
 
+    public int getNumberofCells() {
+        return numberofCells;
+    }
+
+    public void setNumberofCells(int numberofCells) {
+        this.numberofCells = numberofCells;
+    }
+
     public void update() {
         centerExplosion = new ChildExplosion(x, y, null, centerExplosionFrames);
-        int numberofCells = 1;
         if (this.isPowerUp()) {
-            if (x - numberofCells >= 0
-                    && BombermanGame.textMap.get(y).get(x - numberofCells).equals(" "))
-                horizontalLeftExplosion.add(new ChildExplosion(x - 1, y, null, explosionHorizontalFrames));
-            if (BombermanGame.textMap.get(y).get(x + numberofCells).equals(" "))
-                horizontalRightExplosion.add(new ChildExplosion(x + 1, y, null, explosionHorizontalFrames));
-            if (BombermanGame.textMap.get(y + numberofCells).get(x).equals(" "))
-            verticalDownExplosion.add(new ChildExplosion(x, y + 1, null, explosionVerticalFrames));
-            if (y - numberofCells >= 0
-                    && BombermanGame.textMap.get(y - numberofCells).get(x).equals(" "))
-                verticalTopExplosion.add(new ChildExplosion(x, y - 1, null, explosionVerticalFrames));
-
+            for (int i = 1; i <= numberofCells; i++) {
+                if (x - i >= 0
+                        && BombermanGame.textMap.get(y).get(x - i).equals(" "))
+                    horizontalLeftExplosion.add(new ChildExplosion(x - i, y, null, explosionHorizontalFrames));
+                if (BombermanGame.textMap.get(y).get(x + i).equals(" "))
+                    horizontalRightExplosion.add(new ChildExplosion(x + i, y, null, explosionHorizontalFrames));
+                if (BombermanGame.textMap.get(y + i).get(x).equals(" "))
+                    verticalDownExplosion.add(new ChildExplosion(x, y + i, null, explosionVerticalFrames));
+                if (y - i >= 0
+                        && BombermanGame.textMap.get(y - i).get(x).equals(" "))
+                    verticalTopExplosion.add(new ChildExplosion(x, y - i, null, explosionVerticalFrames));
+            }
             numberofCells++;
         }
         if (y - numberofCells >= 0
@@ -67,13 +77,13 @@ public class Explosion extends AnimatedImage {
                 && BombermanGame.textMap.get(y).get(x - numberofCells).equals(" ")) leftExplosion = new ChildExplosion(x - numberofCells, y, null, leftExplosionFrames);
         if (BombermanGame.textMap.get(y).get(x + numberofCells).equals(" ")) rightExplosion = new ChildExplosion(x + numberofCells, y, null, rightExplosionFramse);
 
-        BombermanGame.addStillObjects(centerExplosion);
+        BombermanGame.stillObjects.add(centerExplosion);
 
         if (horizontalRightExplosion.size() != 0) {
             BombermanGame.stillObjects.addAll(horizontalRightExplosion);
             for (ChildExplosion childExplosion: horizontalRightExplosion) {
                 if (childExplosion.isFinished()) {
-                    BombermanGame.removeStillObjects(childExplosion);
+                    BombermanGame.stillObjects.remove(childExplosion);
                     childExplosion = null;
                 }
             }
@@ -83,7 +93,7 @@ public class Explosion extends AnimatedImage {
             BombermanGame.stillObjects.addAll(horizontalLeftExplosion);
             for (ChildExplosion childExplosion: horizontalLeftExplosion) {
                 if (childExplosion.isFinished()) {
-                    BombermanGame.removeStillObjects(childExplosion);
+                    BombermanGame.stillObjects.remove(childExplosion);
                     childExplosion = null;
                 }
             }
@@ -93,7 +103,7 @@ public class Explosion extends AnimatedImage {
             BombermanGame.stillObjects.addAll(verticalDownExplosion);
             for (ChildExplosion childExplosion: verticalDownExplosion) {
                 if (childExplosion.isFinished()) {
-                    BombermanGame.removeStillObjects(childExplosion);
+                    BombermanGame.stillObjects.remove(childExplosion);
                     childExplosion = null;
                 }
             }
@@ -103,7 +113,7 @@ public class Explosion extends AnimatedImage {
             BombermanGame.stillObjects.addAll(verticalTopExplosion);
             for (ChildExplosion childExplosion: verticalTopExplosion) {
                 if (childExplosion.isFinished()) {
-                    BombermanGame.removeStillObjects(childExplosion);
+                    BombermanGame.stillObjects.remove(childExplosion);
                     childExplosion = null;
                 }
             }
@@ -111,40 +121,40 @@ public class Explosion extends AnimatedImage {
 
         if (topExplosion != null) {
             topExplosion.setTail(true);
-            BombermanGame.addStillObjects(topExplosion);
+            BombermanGame.stillObjects.add(topExplosion);
             BombermanGame.textMap.get(y - numberofCells).set(x, "-1");
             if (topExplosion.isFinished()) {
-                BombermanGame.removeStillObjects(topExplosion);
+                BombermanGame.stillObjects.remove(topExplosion);
                 topExplosion = null;
             }
         }
 
         if (downExplosion != null) {
             downExplosion.setTail(true);
-            BombermanGame.addStillObjects(downExplosion);
+            BombermanGame.stillObjects.add(downExplosion);
             BombermanGame.textMap.get(y + numberofCells).set(x, "-1");
             if (downExplosion.isFinished()) {
-                BombermanGame.removeStillObjects(downExplosion);
+                BombermanGame.stillObjects.remove(downExplosion);
                 downExplosion = null;
             }
         }
 
         if (leftExplosion != null) {
             leftExplosion.setTail(true);
-            BombermanGame.addStillObjects(leftExplosion);
+            BombermanGame.stillObjects.add(leftExplosion);
             BombermanGame.textMap.get(y).set(x - numberofCells, "-1");
             if (leftExplosion.isFinished()) {
-                BombermanGame.removeStillObjects(leftExplosion);
+                BombermanGame.stillObjects.remove(leftExplosion);
                 leftExplosion = null;
             }
         }
 
         if (rightExplosion != null) {
             rightExplosion.setTail(true);
-            BombermanGame.addStillObjects(rightExplosion);
+            BombermanGame.stillObjects.add(rightExplosion);
             BombermanGame.textMap.get(y).set(x + numberofCells, "-1");
             if (rightExplosion.isFinished()) {
-                BombermanGame.removeStillObjects(rightExplosion);
+                BombermanGame.stillObjects.remove(rightExplosion);
                 rightExplosion = null;
             }
         }

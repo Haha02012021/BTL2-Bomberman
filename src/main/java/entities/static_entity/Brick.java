@@ -12,14 +12,16 @@ public class Brick extends AnimatedImage {
     private boolean hiddenPortal = true;
     private boolean hiddenPSpeed = true;
     private boolean hiddenPFlame = true;
+    private boolean hiddenPDetonation = true;
     private Image[] brickFrames = {
             Sprite.brick_exploded.getFxImage(),
             Sprite.brick_exploded1.getFxImage(),
             Sprite.brick_exploded2.getFxImage(),
             Sprite.grass.getFxImage(),
             Sprite.brick.getFxImage(),
-            Sprite.powerup_speed.getFxImage(),
-            Sprite.powerup_flames.getFxImage()
+            Sprite.powerup_flamepass.getFxImage(),
+            Sprite.powerup_flames.getFxImage(),
+            Sprite.powerup_detonator.getFxImage()
     };
 
     public boolean isHiddenPortal() {
@@ -54,6 +56,14 @@ public class Brick extends AnimatedImage {
         this.hiddenPSpeed = hiddenPSpeed;
     }
 
+    public boolean isHiddenPDetonation() {
+        return hiddenPDetonation;
+    }
+
+    public void setHiddenPDetonation(boolean hiddenPDetonation) {
+        this.hiddenPDetonation = hiddenPDetonation;
+    }
+
     public Brick(int x, int y, Image img) {
         super(x, y, img);
         this.setFrames(brickFrames);
@@ -64,7 +74,7 @@ public class Brick extends AnimatedImage {
         // TODO Auto-generated method stub
         if (isExploded) {
             if (this.getIndex() >= 3) {
-                if (hiddenPortal && hiddenPSpeed && hiddenPFlame) {
+                if (hiddenPortal && hiddenPSpeed && hiddenPFlame && hiddenPDetonation) {
                     this.setIndex(3);
                     this.setImg(brickFrames[3]);
                     BombermanGame.removeEntities.add(this);
@@ -81,6 +91,11 @@ public class Brick extends AnimatedImage {
                     if (!hiddenPFlame) {
                         this.setIndex(6);
                         this.setImg(brickFrames[6]);
+                    }
+
+                    if (!hiddenPDetonation) {
+                        this.setIndex(7);
+                        this.setImg(brickFrames[7]);
                     }
                 }
 

@@ -16,7 +16,7 @@ public class AnimatedImage extends Entity {
     private int speed;
     private int index = 0;
     private boolean died = false;
-    protected String[] stillSymbols = {"#", "*", "x", "s", "f"};
+    protected String[] stillSymbols = {"#", "*", "x", "s", "f", "d"};
 
     public AnimatedImage() {
         positionX = 0;
@@ -73,7 +73,7 @@ public class AnimatedImage extends Entity {
 
     public boolean checkCollisionToStillObjects(String[] symbols, String type) {
         for (String s: symbols) {
-            if (this.checkCollision(BombermanGame.textMap, s, type, this.getSpeed())) return false;
+            if (this.checkCollision(BombermanGame.textMap, s, type, speed)) return false;
         }
         return true;
     }

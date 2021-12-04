@@ -67,7 +67,7 @@ public abstract class Entity {
         if (type.equals("RIGHT")) {
             int nextX = (int)(this.getX() + size) / size;
             if (this instanceof Bomberman || this instanceof Enemy) {
-                nextX = (int) (this.getX() + size + speed - speed / 4) / size;
+                nextX = (int) (this.getX() + size + speed - speed / 2) / size;
             }
             double nextDoubleY = this.getY() / size;
             int nextY = (int)nextDoubleY;
@@ -97,7 +97,7 @@ public abstract class Entity {
             int nextX = (int)nextDoubleX;
             int nextY = (int)(this.getY() + size) / size;
             if (this instanceof Bomberman || this instanceof Enemy) {
-                nextY = (int) (this.getY() + size + speed - speed / 4) / size;
+                nextY = (int) (this.getY() + size + speed - speed / 2) / size;
             }
             if (nextDoubleX - nextX > 0.2) {
                 return map.get(nextY).get(nextX).equals(symbol) || map.get(nextY).get(nextX + 1).equals(symbol);
@@ -137,14 +137,17 @@ public abstract class Entity {
                     Rectangle2D c = new Rectangle2D(entity.getX(), entity.getY(), Sprite.SCALED_SIZE, Sprite.SCALED_SIZE);
                     if (entity instanceof Brick && c.intersects(e)) {
                         if (!((Brick) entity).isHiddenPSpeed()) {
-                            ((Bomberman) this).setEatedSpeed(true);
+                            ((Bomberman) this).setEatedFlamePass(true);
                             BombermanGame.removeEntities.add(entity);
                         }
                         if (!((Brick) entity).isHiddenPFlame()) {
                             ((Bomberman) this).setEatedFlames(true);
                             BombermanGame.removeEntities.add(entity);
                         }
-
+                        if (!((Brick) entity).isHiddenPDetonation()) {
+                            ((Bomberman) this).setEatedDetonator(true);
+                            BombermanGame.removeEntities.add(entity);
+                        }
                     }
                 }
             }
