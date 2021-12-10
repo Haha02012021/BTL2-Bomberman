@@ -133,7 +133,9 @@ public class Bomberman extends AnimatedImage {
 
             //put bomb
             putBomb();
-        } else {
+        }
+
+        if (this.isDied()) {
             //handle main dead
             mainDead();
 
