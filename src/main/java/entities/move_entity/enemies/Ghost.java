@@ -44,7 +44,7 @@ public class Ghost extends Kondoria {
         super(x, y, img);
         this.setScore(800);
         this.setNumberOfFrames(5);
-        this.setScore(SPEED_ENEMY + 4);
+        this.setSpeed(SPEED_ENEMY + 4);
         this.setFrames(ghostFrames);
         this.setDieFrames(dieGhostFrames);
     }

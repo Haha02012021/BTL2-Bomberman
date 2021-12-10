@@ -541,7 +541,7 @@ public class BombermanGame extends Application {
 
         levelBox.getChildren().addAll(buttons);
 
-        HBox scoreSumBox = new HBox();
+        /*HBox scoreSumBox = new HBox();
         Label scoreSum = new Label("Best total score: ");
         scoreSum.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
         scoreSum.setTextFill(Color.WHITE);
@@ -549,7 +549,7 @@ public class BombermanGame extends Application {
 
         scoreSumBox.getChildren().add(scoreSum);
 
-        levelBox.getChildren().add(scoreSumBox);
+        levelBox.getChildren().add(scoreSumBox);*/
 
         Label goBack = new Label("BACK");
         goBack.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
@@ -786,15 +786,23 @@ public class BombermanGame extends Application {
         winWindow.setPrefSize(width * Sprite.SCALED_SIZE, height * Sprite.SCALED_SIZE);
 
         Label statusGame = new Label();
-        if (level <= NUMBER_OF_LEVELS) statusGame.setText("YOU WIN");
+        Label scoreDisplay = new Label();
+        if (level <= NUMBER_OF_LEVELS) {
+            statusGame.setText("YOU WIN");
+            scoreDisplay.setText(String.valueOf(score.get()));
+        }
         else {
             statusGame.setText("YOU WIN\nChưa có level mới");
         }
         statusGame.setTextAlignment(TextAlignment.CENTER);
-
         statusGame.setTextFill(Color.WHITE);
         statusGame.setFont(Font.font("Roboto", FontWeight.BOLD, 30));
-        winWindow.getChildren().add(statusGame);
+
+        scoreDisplay.setTextAlignment(TextAlignment.CENTER);
+        scoreDisplay.setTextFill(Color.WHITE);
+        scoreDisplay.setFont(Font.font("Roboto", FontWeight.BOLD, 25));
+
+        winWindow.getChildren().addAll(statusGame, scoreDisplay);
 
         HBox buttonBar = new HBox();
         Button menuButton = new Button("MENU");
@@ -873,9 +881,12 @@ public class BombermanGame extends Application {
         loseWindow.setPrefSize(width * Sprite.SCALED_SIZE, height * Sprite.SCALED_SIZE);
 
         Label statusGame = new Label("YOU LOSE");
+        Label scoreDisplay = new Label(String.valueOf(score.get()));
         statusGame.setTextFill(Color.WHITE);
         statusGame.setFont(Font.font("Roboto", FontWeight.BOLD, 30));
-        loseWindow.getChildren().add(statusGame);
+        scoreDisplay.setTextFill(Color.WHITE);
+        scoreDisplay.setFont(Font.font("Roboto", FontWeight.BOLD, 25));
+        loseWindow.getChildren().addAll(statusGame, scoreDisplay);
 
         HBox buttonBar = new HBox();
         Button menuButton = new Button("MENU");
