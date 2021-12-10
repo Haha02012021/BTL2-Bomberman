@@ -23,6 +23,7 @@ public class Bomberman extends AnimatedImage {
     private boolean eatedDetonator = false;
     private boolean eatedBombs = false;
     private int flamesEated = 0;
+    private int flamePassEated = 0;
     private long flamePassStart = 900_000;
     private int souls = 3;
     private Bomb bomb = null;
@@ -117,7 +118,7 @@ public class Bomberman extends AnimatedImage {
     public void update() {
         this.checkCollision(BombermanGame.entities);
 
-        if (!this.isDied() || flamesEated != 0) {
+        if (!this.isDied() || flamePassEated != 0) {
             //handle eat item
             eatItem();
 
@@ -251,7 +252,7 @@ public class Bomberman extends AnimatedImage {
                     mainDeadSound.play();
                     playMusic = false;
                 }
-                flamesEated = 0;
+                flamePassEated = 0;
                 this.move(dieFrames, "");
                 flamePassStart = 900_000;
             } else {
@@ -284,7 +285,7 @@ public class Bomberman extends AnimatedImage {
         if (this.isEatedFlamePass()) {
             eatItemSound.play();
             flamePassStart = System.currentTimeMillis();
-            flamesEated = 1;
+            flamePassEated = 1;
             this.setEatedFlamePass(false);
         }
 
