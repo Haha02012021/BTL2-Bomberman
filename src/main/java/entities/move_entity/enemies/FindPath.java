@@ -4,7 +4,7 @@ import app.BombermanGame;
 
 import java.util.*;
 
-public class FindMan {
+public class FindPath {
     static class Point {
         int x;
         int y;
@@ -33,6 +33,58 @@ public class FindMan {
             if (current.equals(s)) return true;
         }
         return false;
+    }
+
+    static List<Point> findAPath(Point s, String[] symbolsCanPass) {
+        List<List<String>> map = BombermanGame.textMap;
+
+        List<Point> list = new ArrayList<>();
+        Point next = s;
+        next.prevPoint = next;
+
+        int random = (int) (Math.random() * 10) + 5;
+
+        while (random > 0) {
+            if (next != null) {
+                List<Point> points = new ArrayList<>();
+                int x = next.x;
+                int y = next.y;
+                if (canPassSymbols(map.get(x - 1).get(y), symbolsCanPass)) {
+                    Point point = new Point(x - 1, y);
+                    if (!point.equal(next.prevPoint)) points.add(point);
+                }
+                if (canPassSymbols(map.get(x + 1).get(y), symbolsCanPass)) {
+                    Point point = new Point(x + 1, y);
+                    if (!point.equal(next.prevPoint)) points.add(point);
+                }
+                if (canPassSymbols(map.get(x).get(y - 1), symbolsCanPass)) {
+                    Point point = new Point(x, y - 1);
+                    if (!point.equal(next.prevPoint)) points.add(point);
+                }
+                if (canPassSymbols(map.get(x).get(y + 1), symbolsCanPass)) {
+                    Point point = new Point(x, y + 1);
+                    if (!point.equal(next.prevPoint)) points.add(point);
+                }
+
+                if (points.size() != 0) {
+                    int randomDirect = (int) (Math.random() * points.size()) + 0;
+
+                    points.get(randomDirect).prevPoint = next;
+                    list.add(points.get(randomDirect));
+
+                    random--;
+                    next = points.get(randomDirect);
+                } else {
+                    random--;
+                    next = next.prevPoint;
+                    list.add(next);
+                }
+            } else {
+                break;
+            }
+        }
+
+        return list;
     }
 
     static List<Point> findShortestPath(Point s, Point e, String[] symbolsCanPass) {

@@ -21,7 +21,8 @@ public class Brick extends AnimatedImage {
             Sprite.brick.getFxImage(),
             Sprite.powerup_flamepass.getFxImage(),
             Sprite.powerup_flames.getFxImage(),
-            Sprite.powerup_detonator.getFxImage()
+            Sprite.powerup_detonator.getFxImage(),
+            Sprite.powerup_bombs.getFxImage()
     };
 
     public boolean isHiddenPortal() {

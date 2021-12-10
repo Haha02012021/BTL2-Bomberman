@@ -18,6 +18,9 @@ public class Balloom extends Enemy {
     Image[] dieBallomFrames = {
             Sprite.balloom_dead.getFxImage(),
             Sprite.balloom_dead.getFxImage(),
+            Sprite.balloom_dead.getFxImage(),
+            Sprite.balloom_dead.getFxImage(),
+            Sprite.mob_dead1.getFxImage(),
             Sprite.mob_dead1.getFxImage(),
             Sprite.mob_dead1.getFxImage(),
             Sprite.mob_dead2.getFxImage(),

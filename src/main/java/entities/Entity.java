@@ -21,9 +21,14 @@ public abstract class Entity {
 
     protected Image img;
 
-    protected Entity() {
-    }
+    protected Entity() {}
 
+    //Khởi tạo đối tượng, chuyển từ tọa độ đơn vị sang tọa độ trong canvas
+    public Entity( int xUnit, int yUnit, Image img) {
+        this.x = xUnit * Sprite.SCALED_SIZE;
+        this.y = yUnit * Sprite.SCALED_SIZE;
+        this.img = img;
+    }
 
     public double getX() {
         return this.x;
@@ -46,14 +51,6 @@ public abstract class Entity {
     }
 
     public void setImg(Image img) {
-        this.img = img;
-    }
-
-
-    //Khởi tạo đối tượng, chuyển từ tọa độ đơn vị sang tọa độ trong canvas
-    public Entity( int xUnit, int yUnit, Image img) {
-        this.x = xUnit * Sprite.SCALED_SIZE;
-        this.y = yUnit * Sprite.SCALED_SIZE;
         this.img = img;
     }
 
@@ -128,7 +125,7 @@ public abstract class Entity {
         Rectangle2D e = new Rectangle2D(this.getX(), this.getY(), Sprite.SCALED_SIZE, Sprite.SCALED_SIZE);
         if (this instanceof Bomberman) {
             for (AnimatedImage entity: entities) {
-                if (!(entity instanceof Bomberman) && !(entity instanceof Brick)) {
+                if (!(entity instanceof Bomberman) && !(entity instanceof Brick) && !entity.isDied()) {
                     Rectangle2D c = new Rectangle2D(entity.getX(), entity.getY(), Sprite.SCALED_SIZE, Sprite.SCALED_SIZE);
                     if (c.intersects(e)) {
                         ((Bomberman) this).setDied(true);
@@ -139,14 +136,20 @@ public abstract class Entity {
                         if (!((Brick) entity).isHiddenPSpeed()) {
                             ((Bomberman) this).setEatedFlamePass(true);
                             BombermanGame.removeEntities.add(entity);
+                            BombermanGame.textMap.get((int) entity.getY() / Sprite.SCALED_SIZE)
+                                    .set((int) entity.getX() / Sprite.SCALED_SIZE, " ");
                         }
                         if (!((Brick) entity).isHiddenPFlame()) {
                             ((Bomberman) this).setEatedFlames(true);
                             BombermanGame.removeEntities.add(entity);
+                            BombermanGame.textMap.get((int) entity.getY() / Sprite.SCALED_SIZE)
+                                    .set((int) entity.getX() / Sprite.SCALED_SIZE, " ");
                         }
                         if (!((Brick) entity).isHiddenPDetonation()) {
                             ((Bomberman) this).setEatedDetonator(true);
                             BombermanGame.removeEntities.add(entity);
+                            BombermanGame.textMap.get((int) entity.getY() / Sprite.SCALED_SIZE)
+                                    .set((int) entity.getX() / Sprite.SCALED_SIZE, " ");
                         }
                     }
                 }
@@ -160,7 +163,6 @@ public abstract class Entity {
             }
         }
     }
-
 
     public abstract void update();
 }

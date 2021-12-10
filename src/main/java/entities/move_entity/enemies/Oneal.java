@@ -9,6 +9,9 @@ public class Oneal extends Enemy {
     Image[] dieOnealFrames = {
             Sprite.oneal_dead.getFxImage(),
             Sprite.oneal_dead.getFxImage(),
+            Sprite.oneal_dead.getFxImage(),
+            Sprite.oneal_dead.getFxImage(),
+            Sprite.mob_dead1.getFxImage(),
             Sprite.mob_dead1.getFxImage(),
             Sprite.mob_dead1.getFxImage(),
             Sprite.mob_dead2.getFxImage(),

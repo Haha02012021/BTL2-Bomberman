@@ -7,6 +7,8 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 import javafx.util.Duration;
 
 public class Enemy extends AnimatedImage {
@@ -23,6 +25,7 @@ public class Enemy extends AnimatedImage {
     protected boolean moveLeft = false;
     protected int random = (int)(Math.random() * 4) + 1;
     protected int prevRandom;
+    protected String[] stillSymbols = {"#", "*", "x", "s", "f", "d", "b", "F", "S", "D", "B", "m"};
     public Enemy(int x, int y, Image img) {
         super(x, y, img);
         this.setPosition(x * Sprite.SCALED_SIZE, y * Sprite.SCALED_SIZE);
@@ -95,9 +98,11 @@ public class Enemy extends AnimatedImage {
     public void update() {
         // TODO Auto-generated method stub
         if (this.isDied()) {
+            MediaPlayer enemyDeadSound = new MediaPlayer(new Media(BombermanGame.class.getResource("sound/enemy_die.wav").toExternalForm()));
+            enemyDeadSound.play();
             this.setFrames(dieFrames);
-            numberOfFrames = 7;
-            defaultIndex = 8;
+            numberOfFrames = 10;
+            defaultIndex = 11;
         } else {
             move();
         }

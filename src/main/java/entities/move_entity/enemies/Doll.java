@@ -1,9 +1,20 @@
 package entities.move_entity.enemies;
 
+import app.BombermanGame;
 import graphics.Sprite;
 import javafx.scene.image.Image;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Doll extends Enemy {
+    protected boolean next = true;
+    protected int x;
+    protected int y;
+    protected int count;
+    protected List<FindPath.Point> path = new ArrayList<>();
+    protected String[] symbolsCanPass = {" ", "X"};
+
     Image[] dollFrames = {
             Sprite.doll_left1.getFxImage(),
             Sprite.doll_left2.getFxImage(),
@@ -16,6 +27,9 @@ public class Doll extends Enemy {
     Image[] dieDollFrames = {
             Sprite.doll_dead.getFxImage(),
             Sprite.doll_dead.getFxImage(),
+            Sprite.doll_dead.getFxImage(),
+            Sprite.doll_dead.getFxImage(),
+            Sprite.mob_dead1.getFxImage(),
             Sprite.mob_dead1.getFxImage(),
             Sprite.mob_dead1.getFxImage(),
             Sprite.mob_dead2.getFxImage(),
@@ -33,104 +47,136 @@ public class Doll extends Enemy {
         this.setDieFrames(dieDollFrames);
     }
 
+    public void moveLeft(int nextY) {
+        if (this.getX() > nextY * Sprite.SCALED_SIZE) {
+            if (this.getX() - this.getSpeed() > nextY * Sprite.SCALED_SIZE) {
+                this.setX(this.getX() - this.getSpeed());
+            } else {
+                this.setX(nextY * Sprite.SCALED_SIZE + 1);
+                y = nextY;
+                count++;
+                findNextPath();
+            }
+        }
+    }
+
+    public void moveRight(int nextY) {
+        if (this.getX() < nextY * Sprite.SCALED_SIZE) {
+            if (this.getX() + this.getSpeed() < nextY * Sprite.SCALED_SIZE) {
+                this.setX(this.getX() + this.getSpeed());
+            } else {
+                this.setX(nextY * Sprite.SCALED_SIZE - 1);
+                y = nextY;
+                count++;
+                findNextPath();
+            }
+        }
+    }
+
+    public void moveDown(int nextX) {
+        if (this.getY() < nextX * Sprite.SCALED_SIZE) {
+            if (this.getY() + this.getSpeed() < nextX * Sprite.SCALED_SIZE) {
+                this.setY(this.getY() + this.getSpeed());
+            } else {
+                this.setY(nextX * Sprite.SCALED_SIZE);
+                x = nextX;
+                count++;
+                findNextPath();
+            }
+        }
+    }
+
+    public void moveUp(int nextX) {
+        if (this.getY() > nextX * Sprite.SCALED_SIZE) {
+            if (this.getY() - this.getSpeed() > nextX * Sprite.SCALED_SIZE) {
+                this.setY(this.getY() - this.getSpeed());
+            } else {
+                this.setY(nextX * Sprite.SCALED_SIZE);
+                x = nextX;
+                count++;
+                findNextPath();
+            }
+        }
+    }
+
+    public void findNextPath() {
+        count = 0;
+
+        List<FindPath.Point> aPath = FindPath.findAPath(
+                new FindPath.Point(x, y),
+                symbolsCanPass
+        );
+
+        path = aPath;
+    }
+
     @Override
     public void move() {
-        super.move();
-        if (moveRight) {
-            if (this.checkCollisionToStillObjects(stillSymbols, "RIGHT")) {
-                this.setX(this.getX() + SPEED_ENEMY);
-                random--;
-                if (random == -100) {
-                    random = (int)(Math.random() * 4) + 1;
-                    while (random == prevRandom) {
-                        random = (int)(Math.random() * 4) + 1;
-                    }
-                }
-            } else if (this.checkCollisionToStillObjects(stillSymbols, "LEFT")) {
-                this.setDefaultIndex(0);
-                this.setNumberOfFrames(2);
-                moveRight = false;
-                moveLeft = true;
-                moveDown = false;
-                moveUp = false;
-            } else {
-                random = (int)(Math.random() * 4) + 1;
-                while (random == prevRandom) {
-                    random = (int)(Math.random() * 4) + 1;
-                }
+        if (next) {
+            x = (int) this.getY() / Sprite.SCALED_SIZE;
+            y = (int) this.getX() / Sprite.SCALED_SIZE;
+
+            findNextPath();
+            next = false;
+        } else {
+            if (path.size() <= 1 || count >= path.size()) {
+                findNextPath();
             }
         }
 
-        if (moveLeft) {
-            if (this.checkCollisionToStillObjects(stillSymbols, "LEFT")) {
-                this.setX(this.getX() - SPEED_ENEMY);
-                random--;
-                if (random == -100) {
-                    random = (int)(Math.random() * 4) + 1;
-                    while (random == prevRandom) {
-                        random = (int)(Math.random() * 4) + 1;
-                    }
-                }
-            } else if (this.checkCollisionToStillObjects(stillSymbols, "RIGHT")) {
-                this.setDefaultIndex(3);
-                this.setNumberOfFrames(5);
-                moveRight = true;
-                moveLeft = false;
-                moveDown = false;
-                moveUp = false;
-            } else {
-                random = (int)(Math.random() * 4) + 1;
-                while (random == prevRandom) {
-                    random = (int)(Math.random() * 4) + 1;
-                }
-            }
-        }
+        if (path.size() > 1 && count < path.size()) {
+            int nextX = path.get(count).x;
+            int nextY = path.get(count).y;
 
-        if (moveDown) {
-            if (this.checkCollisionToStillObjects(stillSymbols, "DOWN")) {
-                this.setY(this.getY() + SPEED_ENEMY);
-                random--;
-                if (random == -100) {
-                    random = (int)(Math.random() * 4) + 1;
-                    while (random == prevRandom) {
-                        random = (int)(Math.random() * 4) + 1;
-                    }
-                }
-            } else if (this.checkCollisionToStillObjects(stillSymbols, "UP")) {
-                moveRight = false;
+            if (nextX - x > 0 && !moveDown) {
                 moveLeft = false;
-                moveDown = false;
-                moveUp = true;
-            } else {
-                random = (int)(Math.random() * 4) + 1;
-                while (random == prevRandom) {
-                    random = (int)(Math.random() * 4) + 1;
-                }
-            }
-        }
-
-        if (moveUp) {
-            if (this.checkCollisionToStillObjects(stillSymbols, "UP")) {
-                this.setY(this.getY() - SPEED_ENEMY);
-                random--;
-                if (random == -100) {
-                    random = (int)(Math.random() * 4) + 1;
-                    while (random == prevRandom) {
-                        random = (int)(Math.random() * 4) + 1;
-                    }
-                }
-            } else if (this.checkCollisionToStillObjects(stillSymbols, "DOWN")) {
                 moveRight = false;
-                moveLeft = false;
                 moveDown = true;
                 moveUp = false;
-            } else {
-                random = (int)(Math.random() * 4) + 1;
-                while (random == prevRandom) {
-                    random = (int)(Math.random() * 4) + 1;
-                }
             }
+
+            if (moveDown) {
+                moveDown(nextX);
+            }
+
+            if (nextX - x < 0 && !moveUp) {
+                moveLeft = false;
+                moveRight = false;
+                moveDown = false;
+                moveUp = true;
+            }
+
+            if (moveUp) {
+                moveUp(nextX);
+            }
+
+            if (nextY - y > 0 && !moveRight) {
+                this.setDefaultIndex(3);
+                this.setNumberOfFrames(5);
+                moveLeft = false;
+                moveRight = true;
+                moveDown = false;
+                moveUp = false;
+            }
+
+            if (moveRight) {
+                moveRight(nextY);
+            }
+
+            if (nextY - y < 0 && !moveLeft) {
+                this.setDefaultIndex(0);
+                this.setNumberOfFrames(2);
+                moveLeft = true;
+                moveRight = false;
+                moveDown = false;
+                moveUp = false;
+            }
+
+            if (moveLeft) {
+                moveLeft(nextY);
+            }
+
+            this.setPosition(this.getX(), this.getY());
         }
-        this.setPosition(this.getX(), this.getY());
     }
 }

@@ -18,14 +18,6 @@ public class ChildExplosion extends AnimatedImage {
         this.setSpeed(0);
     }
 
-    public ChildExplosion() {
-
-    }
-
-    public boolean isTail() {
-        return tail;
-    }
-
     public void setTail(boolean tail) {
         this.tail = tail;
     }
@@ -50,137 +42,67 @@ public class ChildExplosion extends AnimatedImage {
             if (!finished) {
                 this.checkCollision(BombermanGame.entities);
                 if (!tail) {
-                    if (this.checkCollision(BombermanGame.textMap, "*", "LEFT", 0)
-                            || this.checkCollision(BombermanGame.textMap, "x", "LEFT", 0)
-                            || this.checkCollision(BombermanGame.textMap, "s", "LEFT", 0)
-                            || this.checkCollision(BombermanGame.textMap, "f", "LEFT", 0)
-                            || this.checkCollision(BombermanGame.textMap, "d", "LEFT", 0)) {
+                    if (checkCollisionToItem("LEFT")) {
                         int x = (int)(this.getX() / Sprite.SCALED_SIZE) - 1;
                         int y = (int)(this.getY() / Sprite.SCALED_SIZE);
-                        System.out.println(x + " " + y);
-                        Brick brick = new Brick(x, y, Sprite.brick.getFxImage());
-                        Portal grass = new Portal(x, y, Sprite.grass.getFxImage());
-                        if (this.checkCollision(BombermanGame.textMap, "*", "LEFT", 0)) BombermanGame.textMap.get(y).set(x, " ");
-                        if (this.checkCollision(BombermanGame.textMap, "x", "LEFT", 0)) {
-                            BombermanGame.textMap.get(y).set(x, "X");
-                            brick.setHiddenPortal(false);
-                            BombermanGame.addStillObjects.add(new Portal(x, y, Sprite.portal.getFxImage()));
-                        }
-                        if (this.checkCollision(BombermanGame.textMap, "s", "LEFT", 0)) {
-                            BombermanGame.textMap.get(y).set(x, " ");
-                            brick.setHiddenPSpeed(false);
-                        }
-                        if (this.checkCollision(BombermanGame.textMap, "f", "LEFT", 0)) {
-                            BombermanGame.textMap.get(y).set(x, " ");
-                            brick.setHiddenPFlame(false);
-                        }
-                        if (this.checkCollision(BombermanGame.textMap, "d", "LEFT", 0)) {
-                            BombermanGame.textMap.get(y).set(x, " ");
-                            brick.setHiddenPDetonation(false);
-                        }
-                        brick.setExploded(true);
-                        BombermanGame.stillObjects.set(y * BombermanGame.width + x, grass);
-                        BombermanGame.entities.add(brick);
-                    } else if (this.checkCollision(BombermanGame.textMap, "*", "RIGHT", 0)
-                            || this.checkCollision(BombermanGame.textMap, "x", "RIGHT", 0)
-                            || this.checkCollision(BombermanGame.textMap, "s", "RIGHT", 0)
-                            || this.checkCollision(BombermanGame.textMap, "f", "RIGHT", 0)
-                            || this.checkCollision(BombermanGame.textMap, "d", "RIGHT", 0)
-                    ) {
+
+                        handleCollisionToItem(x, y, "LEFT");
+                    } else if (checkCollisionToItem("RIGHT")) {
                         int x = (int)(this.getX() / Sprite.SCALED_SIZE) + 1;
                         int y = (int)(this.getY() / Sprite.SCALED_SIZE);
-                        System.out.println(x + " " + y);
-                        Brick brick = new Brick(x, y, Sprite.brick.getFxImage());
-                        Portal grass = new Portal(x, y, Sprite.grass.getFxImage());
-                        if (this.checkCollision(BombermanGame.textMap, "*", "RIGHT", 0)) BombermanGame.textMap.get(y).set(x, " ");
-                        if (this.checkCollision(BombermanGame.textMap, "x", "RIGHT", 0)) {
-                            BombermanGame.textMap.get(y).set(x, "X");
-                            brick.setHiddenPortal(false);
-                            BombermanGame.addStillObjects.add(new Portal(x, y, Sprite.portal.getFxImage()));
-                        }
-                        if (this.checkCollision(BombermanGame.textMap, "s", "RIGHT", 0)) {
-                            BombermanGame.textMap.get(y).set(x, " ");
-                            brick.setHiddenPSpeed(false);
-                        }
-                        if (this.checkCollision(BombermanGame.textMap, "f", "RIGHT", 0)) {
-                            BombermanGame.textMap.get(y).set(x, " ");
-                            brick.setHiddenPFlame(false);
-                        }
-                        if (this.checkCollision(BombermanGame.textMap, "d", "RIGHT", 0)) {
-                            BombermanGame.textMap.get(y).set(x, " ");
-                            brick.setHiddenPDetonation(false);
-                        }
-                        brick.setExploded(true);
-                        BombermanGame.stillObjects.set(y * BombermanGame.width + x, grass);
-                        BombermanGame.entities.add(brick);
-                    } else if (this.checkCollision(BombermanGame.textMap, "*", "DOWN", 0)
-                            || this.checkCollision(BombermanGame.textMap, "x", "DOWN", 0)
-                            || this.checkCollision(BombermanGame.textMap, "s", "DOWN", 0)
-                            || this.checkCollision(BombermanGame.textMap, "f", "DOWN", 0)
-                            || this.checkCollision(BombermanGame.textMap, "d", "DOWN", 0)
-                    ) {
+
+                        handleCollisionToItem(x, y, "RIGHT");
+                    } else if (checkCollisionToItem("DOWN")) {
                         int x = (int)(this.getX() / Sprite.SCALED_SIZE);
                         int y = (int)(this.getY() / Sprite.SCALED_SIZE) + 1;
-                        System.out.println(x + " " + y);
-                        Brick brick = new Brick(x, y, Sprite.brick.getFxImage());
-                        Portal grass = new Portal(x, y, Sprite.grass.getFxImage());
-                        if (this.checkCollision(BombermanGame.textMap, "*", "DOWN", 0)) BombermanGame.textMap.get(y).set(x, " ");
-                        if (this.checkCollision(BombermanGame.textMap, "x", "DOWN", 0)) {
-                            BombermanGame.textMap.get(y).set(x, "X");
-                            brick.setHiddenPortal(false);
-                            BombermanGame.addStillObjects.add(new Portal(x, y, Sprite.portal.getFxImage()));
-                        }
-                        if (this.checkCollision(BombermanGame.textMap, "s", "DOWN", 0)) {
-                            BombermanGame.textMap.get(y).set(x, " ");
-                            brick.setHiddenPSpeed(false);
-                        }
-                        if (this.checkCollision(BombermanGame.textMap, "f", "DOWN", 0)) {
-                            BombermanGame.textMap.get(y).set(x, " ");
-                            brick.setHiddenPFlame(false);
-                        }
-                        if (this.checkCollision(BombermanGame.textMap, "d", "DOWN", 0)) {
-                            BombermanGame.textMap.get(y).set(x, " ");
-                            brick.setHiddenPDetonation(false);
-                        }
-                        brick.setExploded(true);
-                        BombermanGame.stillObjects.set(y * BombermanGame.width + x, grass);
-                        BombermanGame.entities.add(brick);
-                    } else if (this.checkCollision(BombermanGame.textMap, "*", "UP", 0)
-                            || this.checkCollision(BombermanGame.textMap, "x", "UP", 0)
-                            || this.checkCollision(BombermanGame.textMap, "s", "UP", 0)
-                            || this.checkCollision(BombermanGame.textMap, "f", "UP", 0)
-                            || this.checkCollision(BombermanGame.textMap, "d", "UP", 0)
-                    ) {
+
+                        handleCollisionToItem(x, y, "DOWN");
+                    } else if (checkCollisionToItem("UP")) {
                         int x = (int)(this.getX() / Sprite.SCALED_SIZE);
                         int y = (int)(this.getY() / Sprite.SCALED_SIZE) - 1;
-                        System.out.println(x + " " + y);
-                        Brick brick = new Brick(x, y, Sprite.brick.getFxImage());
-                        Portal grass = new Portal(x, y, Sprite.grass.getFxImage());
-                        if (this.checkCollision(BombermanGame.textMap, "*", "UP", 0)) BombermanGame.textMap.get(y).set(x, " ");
-                        if (this.checkCollision(BombermanGame.textMap, "x", "UP", 0)) {
-                            BombermanGame.textMap.get(y).set(x, "X");
-                            brick.setHiddenPortal(false);
-                            BombermanGame.addStillObjects.add(new Portal(x, y, Sprite.portal.getFxImage()));
-                        }
-                        if (this.checkCollision(BombermanGame.textMap, "s", "UP", 0)) {
-                            BombermanGame.textMap.get(y).set(x, " ");
-                            brick.setHiddenPSpeed(false);
-                        }
-                        if (this.checkCollision(BombermanGame.textMap, "f", "UP", 0)) {
-                            BombermanGame.textMap.get(y).set(x, " ");
-                            brick.setHiddenPFlame(false);
-                        }
-                        if (this.checkCollision(BombermanGame.textMap, "d", "UP", 0)) {
-                            BombermanGame.textMap.get(y).set(x, " ");
-                            brick.setHiddenPDetonation(false);
-                        }
-                        brick.setExploded(true);
-                        BombermanGame.stillObjects.set(y * BombermanGame.width + x, grass);
-                        BombermanGame.entities.add(brick);
+
+                        handleCollisionToItem(x, y, "UP");
                     }
                 }
                 this.setIndex(this.getIndex() + 1);
             }
         }
+    }
+
+    public boolean checkCollisionToItem(String type) {
+        return (this.checkCollision(BombermanGame.textMap, "*", type, 0)
+                || this.checkCollision(BombermanGame.textMap, "x", type, 0)
+                || this.checkCollision(BombermanGame.textMap, "s", type, 0)
+                || this.checkCollision(BombermanGame.textMap, "f", type, 0)
+                || this.checkCollision(BombermanGame.textMap, "d", type, 0)
+                || this.checkCollision(BombermanGame.textMap, "b", type, 0));
+    }
+
+    public void handleCollisionToItem(int x, int y, String type) {
+        Brick brick = new Brick(x, y, Sprite.brick.getFxImage());
+        Portal grass = new Portal(x, y, Sprite.grass.getFxImage());
+
+        if (this.checkCollision(BombermanGame.textMap, "*", type, 0)) BombermanGame.textMap.get(y).set(x, " ");
+        if (this.checkCollision(BombermanGame.textMap, "x", type, 0)) {
+            BombermanGame.textMap.get(y).set(x, "X");
+            brick.setHiddenPortal(false);
+            BombermanGame.addStillObjects.add(new Portal(x, y, Sprite.portal.getFxImage()));
+        }
+        if (this.checkCollision(BombermanGame.textMap, "s", type, 0)) {
+            BombermanGame.textMap.get(y).set(x, "S");
+            brick.setHiddenPSpeed(false);
+        }
+        if (this.checkCollision(BombermanGame.textMap, "f", type, 0)) {
+            BombermanGame.textMap.get(y).set(x, "F");
+            brick.setHiddenPFlame(false);
+        }
+        if (this.checkCollision(BombermanGame.textMap, "d", type, 0)) {
+            BombermanGame.textMap.get(y).set(x, "D");
+            brick.setHiddenPDetonation(false);
+        }
+        brick.setExploded(true);
+
+        BombermanGame.stillObjects.set(y * BombermanGame.width + x, grass);
+        BombermanGame.entities.add(brick);
     }
 }

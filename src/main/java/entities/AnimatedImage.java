@@ -8,15 +8,20 @@ import javafx.scene.image.Image;
 import java.util.ArrayList;
 
 public class AnimatedImage extends Entity {
+    //frames
     private Image[] frames = {null};
+    private int index = 0;
+
+    //this on map
     private double positionX;
     private double positionY;
     private double width;
     private double height;
+
+    //properties of this
     private int speed;
-    private int index = 0;
     private boolean died = false;
-    protected String[] stillSymbols = {"#", "*", "x", "s", "f", "d"};
+    protected String[] stillSymbols = {"#", "*", "x", "s", "f", "d", "b"};
 
     public AnimatedImage() {
         positionX = 0;
@@ -27,9 +32,11 @@ public class AnimatedImage extends Entity {
         super(x, y, fxImage);
         this.setPosition(x * Sprite.SCALED_SIZE, y * Sprite.SCALED_SIZE);
     }
+
     public int getIndex() {
         return this.index;
     }
+
     public void setIndex(int i) {
         this.index = i;
     }
@@ -65,8 +72,7 @@ public class AnimatedImage extends Entity {
         gc.drawImage(this.getFrame(index), positionX, positionY);
     }
 
-    public void setPosition(double x, double y)
-    {
+    public void setPosition(double x, double y) {
         positionX = x;
         positionY = y;
     }
@@ -79,7 +85,5 @@ public class AnimatedImage extends Entity {
     }
 
     @Override
-    public void update() {
-
-    }
+    public void update() {}
 }

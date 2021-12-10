@@ -1,7 +1,9 @@
 package app;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -38,25 +40,29 @@ import javafx.scene.effect.InnerShadow;
 import javafx.scene.image.Image;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 import javafx.scene.paint.Color;
 import javafx.scene.text.*;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-// Collect the Money Bags!
 public class BombermanGame extends Application {
     //general
     private GraphicsContext gc;
-    public static VBox fullScreen;
-    private static final int NUMBER_OF_LEVELS = 2;
+    private static final int NUMBER_OF_LEVELS = 5;
     public static int timeLimitMove = 100;
     private static long timeLimitStill = 120;
     public static ArrayList<String> inputKey = new ArrayList<String>();
     public static AnimationTimer timer;
-    private int scoreOfGame = 0;
+    private int scoreOfGame;
+    private int[] activeLevel = new int[NUMBER_OF_LEVELS];
+    private int totalScore;
+    private MediaPlayer backgroundPlayer = new MediaPlayer(new Media(getClass().getResource("sound/background.mp3").toExternalForm()));
 
     //properties of level
+    public static VBox fullScreen;
     public static int width;
     public static int height;
     public static int numberOfEnemies;
@@ -73,9 +79,11 @@ public class BombermanGame extends Application {
     public static boolean startGame = true;
     public static boolean clickMenu = false;
     public static boolean running = false;
+    public static int chosenLevel = 1;
 
     //manage characters
     public static ArrayList<Entity> stillObjects = new ArrayList<>();
+    public static ArrayList<Entity> removeStillObjects = new ArrayList<>();
     public static ArrayList<Entity> addStillObjects = new ArrayList<>();
     public static ArrayList<AnimatedImage> entities = new ArrayList<>();
     public static ArrayList<AnimatedImage> removeEntities = new ArrayList<>();
@@ -94,6 +102,10 @@ public class BombermanGame extends Application {
         theStage.setTitle("Bomberman Game!");
         theStage.setResizable(false);
 
+        readScore();
+
+        activeLevel[level - 1] = 0;
+
         readMap();
 
         Scene stageScene = stageScene(level);
@@ -108,7 +120,8 @@ public class BombermanGame extends Application {
         } else {
             theStage.setScene(gameScene);
         }
-        theStage.getIcons().add(new Image(BombermanGame.class.getResourceAsStream("image/angry.png")));
+
+        backgroundPlayer.setVolume(0.2);
 
         gameScene.setOnKeyPressed(
                 new EventHandler<KeyEvent>() {
@@ -143,11 +156,12 @@ public class BombermanGame extends Application {
 
             private long lastUpdateMove = 0;
             private long getLastUpdateStatic = 0;
-            private long lastUpdateDie = 0;
+            private long lastAddEntity = 0;
             private long saveTime = 0;
 
             @Override
             public void handle(long l) {
+                backgroundPlayer.play();
                 long now = System.currentTimeMillis();
 
                 if (!clickMenu && running) {
@@ -157,6 +171,14 @@ public class BombermanGame extends Application {
                         saveTime = (int)(now - startTime) / 1000;
                     }
                     render();
+
+                    if (level == NUMBER_OF_LEVELS && now - lastAddEntity >= 10_000 && entities.size() < 4) {
+                        int randomX = (int) (Math.random() * (29 - 1 + 1) + 1);
+                        int randomY = (int) (Math.random() * (11 - 1 + 1) + 1);
+                        entities.add(new Ghost(randomX, randomY, null));
+                        lastAddEntity = now;
+                    }
+
                     if (now - lastUpdateMove >= timeLimitMove) {
                         updateMove();
                         lastUpdateMove = now;
@@ -167,6 +189,7 @@ public class BombermanGame extends Application {
                     }
 
                     if (lose) {
+                        backgroundPlayer.stop();
                         resetGame();
 
                         Scene loseScene = loseScene(theStage, stageScene);
@@ -174,6 +197,7 @@ public class BombermanGame extends Application {
                     }
 
                     if (win) {
+                        backgroundPlayer.stop();
                         resetGame();
 
                         level += 1;
@@ -182,27 +206,14 @@ public class BombermanGame extends Application {
                         theStage.setScene(winScene);
                     }
                 }
-
             }
         };
         timer.start();
 
         createMap();
 
+        theStage.getIcons().add(new Image(BombermanGame.class.getResourceAsStream("image/angry.png")));
         theStage.show();
-    }
-
-    //update characters
-    public void updateMove() {
-        entities.removeAll(removeEntities);
-        entities.forEach(e -> {
-            e.update();
-        });
-    }
-
-    public void updateStatic() {
-        stillObjects.addAll(addStillObjects);
-        stillObjects.forEach(e -> e.update());
     }
 
     //render characters
@@ -220,6 +231,20 @@ public class BombermanGame extends Application {
         entities.forEach(g -> g.render(gc, g.getIndex()));
     }
 
+    //update characters
+    public void updateMove() {
+        entities.removeAll(removeEntities);
+        entities.forEach(e -> {
+            e.update();
+        });
+    }
+
+    public void updateStatic() {
+        stillObjects.addAll(addStillObjects);
+        stillObjects.removeAll(removeStillObjects);
+        stillObjects.forEach(e -> e.update());
+    }
+
     //build map
     private void createMap() {
         System.out.println("create map");
@@ -232,7 +257,11 @@ public class BombermanGame extends Application {
                     object = new Wall(j, i, Sprite.wall.getFxImage());
                 } else if (entity.equals("*")) {
                     object = new Brick(j, i, Sprite.brick.getFxImage());
-                } else if (entity.equals("x") || entity.equals("s") || entity.equals("f") || entity.equals("d")) {
+                } else if (entity.equals("x") 
+                            || entity.equals("s") 
+                            || entity.equals("f") 
+                            || entity.equals("d")
+                            || entity.equals("b")) {
                     object = new Brick(j, i, Sprite.brick.getFxImage());
                 } else {
                     object = new Grass(j, i, Sprite.grass.getFxImage());
@@ -286,6 +315,7 @@ public class BombermanGame extends Application {
                 m1 = p1.matcher(line);
                 m2 = p2.matcher(line);
                 if (m1.find()) {
+                    level = Integer.parseInt(m1.group(1).trim());
                     height = Integer.parseInt(m1.group(2).trim());
                     width = Integer.parseInt(m1.group(3).trim());
                 } else if (m2.find()) {
@@ -300,6 +330,34 @@ public class BombermanGame extends Application {
             //TODO: handle exception
             System.out.println(e.getMessage());
         }
+    }
+
+    public void readScore() {
+        File file = null;
+        try {
+            file = new File(getClass().getResource("level/ScoresPerLevel.txt").toURI());
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+        Scanner scanner = null;
+        try {
+            scanner = new Scanner(file);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        int index = 0;
+
+        while (scanner.hasNextLine()) {
+            int score = Integer.parseInt(scanner.nextLine());
+
+            if (index < NUMBER_OF_LEVELS) {
+                activeLevel[index] = score;
+                index++;
+            }
+            else totalScore = score;
+        }
+
+        scanner.close();
     }
 
     //reset properties of game
@@ -321,7 +379,7 @@ public class BombermanGame extends Application {
         addStillObjects.clear();
     }
 
-    //sceens
+    //scenes
     public Scene startScene(Stage theStage, Scene stageScene, Scene gameScene) {
         VBox startWindow = new VBox();
         startWindow.setStyle("-fx-background-color: black;");
@@ -333,11 +391,19 @@ public class BombermanGame extends Application {
         startWindow.getChildren().add(nameGame);
 
         HBox buttonBar = new HBox();
+
         Button tutorialButton = new Button("TUTORIAL");
-        styleButton(tutorialButton, Color.WHITE);
+        styleButton(tutorialButton, Color.WHITE, Color.web("#cc3333"));
         tutorialButton.setOnAction(e -> {
             Scene tutorialScene = tutorialScene(theStage, startWindow.getScene());
             theStage.setScene(tutorialScene);
+        });
+
+        Button levelButton = new Button("LEVEL");
+        styleButton(levelButton, Color.WHITE, Color.web("#cc3333"));
+        levelButton.setOnAction(e -> {
+            Scene levelScene = levelScene(theStage, startWindow.getScene());
+            theStage.setScene(levelScene);
         });
 
         Button continueButton = new Button("CONTINUE");
@@ -345,7 +411,7 @@ public class BombermanGame extends Application {
         continueButton.setFont(Font.font("Roboto", FontWeight.BOLD,  20));
         continueButton.setTextFill(Color.web("#cccccc"));
         if (clickMenu) {
-            styleButton(continueButton, Color.WHITE);
+            styleButton(continueButton, Color.WHITE, Color.web("#cc3333"));
             continueButton.setOnAction(e -> {
                 clickMenu = false;
                 Timeline timeline = new Timeline();
@@ -370,8 +436,8 @@ public class BombermanGame extends Application {
         }
 
         Button startButton = new Button("START");
-        if (clickMenu) startButton.setText("RESTART");
-        styleButton(startButton, Color.WHITE);
+        if (clickMenu && chosenLevel == level) startButton.setText("RESTART");
+        styleButton(startButton, Color.WHITE, Color.web("#cc3333"));
         startButton.setOnAction(e -> {
             running = true;
             Timeline timeline = new Timeline();
@@ -380,14 +446,25 @@ public class BombermanGame extends Application {
             timeline.getKeyFrames().add(new KeyFrame(
                     Duration.millis(0),
                     event -> {
-                        theStage.setScene(stageScene);
+                        if (level != chosenLevel) {
+                            level = chosenLevel;
+                            resetGame();
+                            try {
+                                BombermanGame.this.start(theStage);
+                            } catch (IOException ex) {
+                                ex.printStackTrace();
+                            }
+                        }
+                        theStage.setScene(stageScene(level));
                     }
             ));
 
             timeline.getKeyFrames().add(new KeyFrame(
                     Duration.millis(1000),
                     event -> {
-                        if (!clickMenu) theStage.setScene(gameScene);
+                        if (!clickMenu && level == chosenLevel) {
+                            theStage.setScene(gameScene);
+                        }
                         else {
                             resetGame();
                             try {
@@ -395,7 +472,7 @@ public class BombermanGame extends Application {
                             } catch (IOException ex) {
                                 ex.printStackTrace();
                             }
-                            clickMenu = false;
+                            if (clickMenu) clickMenu = false;
                         }
                     }
             ));
@@ -403,7 +480,7 @@ public class BombermanGame extends Application {
             timeline.play();
         });
 
-        buttonBar.getChildren().addAll(tutorialButton, continueButton, startButton);
+        buttonBar.getChildren().addAll(tutorialButton, levelButton, continueButton, startButton);
         buttonBar.setAlignment(Pos.CENTER);
         buttonBar.setPadding(new Insets(height * Sprite.SCALED_SIZE / 24, 0, 0, 0));
         startWindow.getChildren().add(buttonBar);
@@ -416,7 +493,84 @@ public class BombermanGame extends Application {
 
     public Scene levelScene(Stage theStage, Scene startScene) {
         VBox levelBox = new VBox();
+        levelBox.setStyle("-fx-background-color: black;");
+        levelBox.setPrefSize(width * Sprite.SCALED_SIZE, height * Sprite.SCALED_SIZE);
 
+
+        Label levelTitle = new Label("LEVEL");
+        levelTitle.setFont(Font.font("Roboto", FontWeight.BOLD, 48));
+        levelTitle.setTextFill(Color.web("#cc3333"));
+
+        levelBox.getChildren().addAll(levelTitle);
+        levelBox.setAlignment(Pos.CENTER);
+
+        Button[] buttons = new Button[NUMBER_OF_LEVELS];
+
+        for (int i = 1; i <= NUMBER_OF_LEVELS; i++) {
+            Button button = new Button("LEVEL " + i);
+            if (chosenLevel != i) {
+                styleButton(button, Color.WHITE, Color.web("#cc3333"));
+                if (activeLevel[i - 1] == -1) styleButton(button, Color.web("#cccccc"), Color.web("#cccccc"));
+            }
+            else styleButton(button, Color.web("#993333"), Color.web("#993333"));
+            button.setFont(Font.font("Roboto", FontWeight.BOLD,  32));
+
+            buttons[i - 1] = button;
+
+            int finalI = i;
+
+            if (activeLevel[finalI - 1] != -1) {
+                buttons[finalI - 1].setOnAction(e -> {
+                    chosenLevel = finalI;
+                    for (Button b: buttons) {
+                        b.setTextFill(Color.WHITE);
+                    }
+                    buttons[finalI - 1].setTextFill(Color.web("#993333"));
+                });
+
+                buttons[finalI - 1].hoverProperty().addListener((observableValue, aBoolean, t1) -> {
+                    if (t1) {
+                        buttons[finalI - 1].setTextFill(Color.web("#cc3333"));
+                    } else {
+                        if (chosenLevel != finalI) buttons[finalI - 1].setTextFill(Color.WHITE);
+                        else buttons[finalI - 1].setTextFill(Color.web("#993333"));
+                    }
+                });
+            }
+        }
+
+        levelBox.getChildren().addAll(buttons);
+
+        HBox scoreSumBox = new HBox();
+        Label scoreSum = new Label("Best total score: ");
+        scoreSum.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+        scoreSum.setTextFill(Color.WHITE);
+        scoreSumBox.setAlignment(Pos.CENTER);
+
+        scoreSumBox.getChildren().add(scoreSum);
+
+        levelBox.getChildren().add(scoreSumBox);
+
+        Label goBack = new Label("BACK");
+        goBack.setFont(Font.font("Roboto", FontWeight.BOLD, 20));
+        goBack.setTextFill(Color.WHITE);
+        goBack.setOnMouseClicked(event -> {
+            if (chosenLevel == level) theStage.setScene(startScene);
+            else theStage.setScene(startScene(theStage, stageScene(chosenLevel), gameScene(theStage, stageScene(chosenLevel))));
+        });
+
+        Pane pane = new Pane(goBack);
+        goBack.hoverProperty().addListener((observableValue, aBoolean, t11) -> {
+            if (t11) {
+                goBack.setTextFill(Color.web("#cc3333"));
+            } else {
+                goBack.setTextFill(Color.WHITE);
+            }
+        });
+
+        goBack.setLayoutX(pane.getLayoutX() + Sprite.SCALED_SIZE * (width - 10));
+
+        levelBox.getChildren().add(pane);
 
         Scene levelScene = new Scene(levelBox);
 
@@ -483,6 +637,7 @@ public class BombermanGame extends Application {
 
     public Scene stageScene(int level) {
         // stage scene
+        System.out.println(level);
         StackPane stageWindow = new StackPane();
         stageWindow.setPrefSize(width * Sprite.SCALED_SIZE, height * Sprite.SCALED_SIZE);
         stageWindow.setStyle("-fx-background-color: black;");
@@ -539,6 +694,13 @@ public class BombermanGame extends Application {
                     timeDisplay.setTextFill(Color.RED);
                     titleTime.setTextFill(Color.RED);
                 }
+
+                if (Integer.parseInt(t1) == 0) {
+                    if (level != NUMBER_OF_LEVELS) lose = true;
+                    else {
+                        if (souls.get() > 0) win = true;
+                    }
+                }
             }
         }));
 
@@ -571,6 +733,8 @@ public class BombermanGame extends Application {
         soulDisplay.textProperty().addListener(((observableValue, s, t1) -> {
             if (t1 != null) {
                 if (Integer.parseInt(t1) == 0) {
+                    MediaPlayer loseSound = new MediaPlayer(new Media(BombermanGame.class.getResource("sound/endgame.wav").toExternalForm()));
+                    loseSound.play();
                     lose = true;
                 }
             }
@@ -599,11 +763,9 @@ public class BombermanGame extends Application {
 
         Group root = new Group();
         Canvas canvas = new Canvas(Sprite.SCALED_SIZE * width, Sprite.SCALED_SIZE * height);
-        System.out.println(canvas.getWidth() + " " + canvas.getHeight());
         root.getChildren().add(canvas);
 
         fullScreen.getChildren().addAll(topBar, root);
-        System.out.println(fullScreen.getWidth() + " " + fullScreen.getHeight());
 
         Scene gameScene = new Scene(fullScreen);
 
@@ -785,13 +947,13 @@ public class BombermanGame extends Application {
         return theWinScene;
     }
 
-    public void styleButton(Button button, Color color) {
+    public void styleButton(Button button, Color color, Color colorHover) {
         button.setStyle("-fx-background-color: transparent;");
         button.setFont(Font.font("Roboto", FontWeight.BOLD,  20));
         button.setTextFill(color);
         button.hoverProperty().addListener((observableValue, aBoolean, t1) -> {
             if (t1) {
-                button.setTextFill(Color.web("#cc3333"));
+                button.setTextFill(colorHover);
             } else {
                 button.setTextFill(color);
             }
